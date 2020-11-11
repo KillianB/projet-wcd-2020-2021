@@ -13,7 +13,7 @@
 		<servlet-class>com.google.api.server.spi.EndpointsServlet</servlet-class>
 		<init-param>
 			<param-name>services</param-name>
-			<param-value>foo.ScoreEndpoint</param-value>
+			<param-value>business.ScoreEndpoint</param-value>
 <!--			TODO: A CHANGER-->
 		</init-param>
 	</servlet>

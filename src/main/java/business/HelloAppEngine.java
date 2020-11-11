@@ -1,4 +1,4 @@
-package foo;
+package business;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -15,9 +15,9 @@ import javax.servlet.http.HttpServletResponse;
 public class HelloAppEngine extends HttpServlet {
 	int i=0;
 	static int j=0;
-	
+
   @Override
-  public void doGet(HttpServletRequest request, HttpServletResponse response) 
+  public void doGet(HttpServletRequest request, HttpServletResponse response)
       throws IOException {
 
     response.setContentType("text/plain");
