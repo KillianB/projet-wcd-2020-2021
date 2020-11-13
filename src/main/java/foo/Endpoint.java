@@ -1,3 +1,4 @@
+
 package foo;
 
 
@@ -51,7 +52,7 @@ public class Endpoint {
 	@ApiMethod(name="getTimeline", httpMethod = HttpMethod.GET)
 	public List<Post> getTimeLine() {
 		List<Post> result = new ArrayList<Post>();
-		
+
 		return result;
 	}
 }

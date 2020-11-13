@@ -1,4 +1,4 @@
-package foo;
+package business;
 
 class LikeCounter {
 	//TODO
