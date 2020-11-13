@@ -62,12 +62,15 @@ public class Endpoint {
 		newPost.setProperty("url", post.getUrl());
 
 		Query query = new Query("Follow")
-				.setFilter(new Query.FilterPredicate("__key__", Query.FilterOperator.EQUAL, post.getSender()));
+				.setFilter(new Query.FilterPredicate("following", Query.FilterOperator.EQUAL, post.getSender()));
 
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
-		Entity result = preparedQuery.asSingleEntity();
+		List<Entity> result = preparedQuery.asList(FetchOptions.Builder.withDefaults());
 
-		HashSet<String> followers = new HashSet<>(((HashSet<String>) result.getProperty("followers")));
+		List<String> keys = new ArrayList<>();
+		result.forEach(entity -> keys.add(entity.getParent().toString()));
+
+		HashSet<String> followers = new HashSet<>(keys);
 
 		newPostIndex.setProperty("receivers", followers);
 
@@ -83,13 +86,18 @@ public class Endpoint {
 	public void follow(@Named("user") String user, @Named("toFollow") String toFollow) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getFollowersByUser(user);
+		Entity result = getFollowersByUser(user, datastoreService);
 		HashSet<String> followers = (HashSet<String>) result.getProperty("followers");
 
 		result.setProperty("followers", followers.add(toFollow));
 
+		List<Entity> messages = getAllPostIndexOfUser(toFollow, datastoreService);
+
+		messages.forEach(message -> message.setProperty("receivers", ((HashSet<String>)message.getProperty("receivers")).add(user)));
+
 		Transaction transaction = datastoreService.beginTransaction();
 		datastoreService.put(result);
+		datastoreService.put(messages);
 		transaction.commit();
 	}
 
@@ -97,23 +105,34 @@ public class Endpoint {
 	public void unfollow(@Named("user") String user, @Named("toFollow") String toUnfollow) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getFollowersByUser(user);
+		Entity result = getFollowersByUser(user, datastoreService);
 		HashSet<String> followers = (HashSet<String>) result.getProperty("followers");
 
 		result.setProperty("followers", followers.remove(toUnfollow));
 
+		List<Entity> messages = getAllPostIndexOfUser(toUnfollow, datastoreService);
+
+		messages.forEach(message -> message.setProperty("receivers", ((HashSet<String>)message.getProperty("receivers")).remove(user)));
+
 		Transaction transaction = datastoreService.beginTransaction();
 		datastoreService.put(result);
+		datastoreService.put(messages);
 		transaction.commit();
 	}
 
-	private Entity getFollowersByUser(String user) {
-		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
-
+	private Entity getFollowersByUser(String user, DatastoreService datastoreService) {
 		Query query = new Query("Follow")
 				.setFilter(new Query.FilterPredicate("__key__", Query.FilterOperator.EQUAL, user));
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
 
 		return preparedQuery.asSingleEntity();
+	}
+
+	private List<Entity> getAllPostIndexOfUser(@Named("user") String user, DatastoreService datastoreService) {
+		Query query = new Query("PostIndex")
+				.setFilter(new Query.FilterPredicate("__key__", Query.FilterOperator.EQUAL, user));
+		PreparedQuery preparedQuery = datastoreService.prepare(query);
+
+		return preparedQuery.asList(FetchOptions.Builder.withDefaults());
 	}
 }
