@@ -11,6 +11,7 @@ import com.google.api.server.spi.config.Nullable;
 import com.google.api.server.spi.response.CollectionResponse;
 import com.google.api.server.spi.response.UnauthorizedException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.api.server.spi.auth.EspAuthenticator;
@@ -49,6 +50,8 @@ public class Endpoint {
 
 	@ApiMethod(name="getTimeline", httpMethod = HttpMethod.GET)
 	public List<Post> getTimeLine() {
+		List<Post> result = new ArrayList<Post>();
 		
+		return result;
 	}
 }
