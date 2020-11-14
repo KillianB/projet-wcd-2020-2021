@@ -1,12 +1,18 @@
 package business;
 
 
+import com.google.api.server.spi.auth.common.User;
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
 import com.google.api.server.spi.config.ApiMethod.HttpMethod;
 import com.google.api.server.spi.config.ApiNamespace;
 import com.google.api.server.spi.config.Named;
 import com.google.appengine.api.datastore.*;
+import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.repackaged.com.google.datastore.v1.client.DatastoreException;
+import com.google.appengine.repackaged.com.google.rpc.Code;
+
 import entities.Post;
 
 import java.security.MessageDigest;
@@ -26,9 +32,30 @@ import java.util.*;
 
 public class Endpoint {
 	@ApiMethod(name = "timeline", httpMethod = HttpMethod.GET)
-	public List<Post> getTimeline() {
+	public List<Post> getTimeline(User user) throws DatastoreException {
 		List<Post> posts = new ArrayList<>();
-
+		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
+		//recup postIndex
+		Query query = new Query("get messages from subs")
+				.setFilter(new Query.FilterPredicate("receivers", FilterOperator.IN, user.getId()))
+				.addSort(Entity.KEY_RESERVED_PROPERTY, SortDirection.DESCENDING);
+		
+		PreparedQuery prepquery = DS.prepare(query);
+		List<Entity> postsI = prepquery.asList(FetchOptions.Builder.withLimit(10));
+		
+		//recup les parents des PostIndex (donc les posts d'origine)
+		for (Entity i : postsI) {
+			query = new Query("getMessageParent")
+					.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, FilterOperator.EQUAL, i.getParent()));
+			PreparedQuery pq = DS.prepare(query);
+			List<Entity> message = pq.asList(FetchOptions.Builder.withDefaults());
+			if (message.size() > 1) {
+				throw new DatastoreException("too many times id", Code.ABORTED, "Abort", new Exception("too many times id"));
+			}
+			//add chacun des posts à la timeline
+			posts.add(Post.entityToPost(i));
+		}
+		
 		return posts;
 	}
 
