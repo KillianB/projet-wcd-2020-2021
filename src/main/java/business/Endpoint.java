@@ -11,7 +11,6 @@ import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.repackaged.com.google.datastore.v1.client.DatastoreException;
-import com.google.appengine.repackaged.com.google.rpc.Code;
 
 import entities.Post;
 
@@ -36,26 +35,23 @@ public class Endpoint {
 		List<Post> posts = new ArrayList<>();
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		//recup postIndex
-		Query query = new Query("get messages from subs")
-				.setFilter(new Query.FilterPredicate("receivers", FilterOperator.IN, user.getId()))
+		Query query = new Query("PostIndex")
+				.setFilter(new Query.FilterPredicate("receivers", FilterOperator.EQUAL, user.getId()))
 				.addSort(Entity.KEY_RESERVED_PROPERTY, SortDirection.DESCENDING);
-		
+
 		PreparedQuery prepquery = DS.prepare(query);
 		List<Entity> postsI = prepquery.asList(FetchOptions.Builder.withLimit(10));
-		
+
 		//recup les parents des PostIndex (donc les posts d'origine)
 		for (Entity i : postsI) {
-			query = new Query("getMessageParent")
+			query = new Query("Post")
 					.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, FilterOperator.EQUAL, i.getParent()));
 			PreparedQuery pq = DS.prepare(query);
 			List<Entity> message = pq.asList(FetchOptions.Builder.withDefaults());
-			if (message.size() > 1) {
-				throw new DatastoreException("too many times id", Code.ABORTED, "Abort", new Exception("too many times id"));
-			}
 			//add chacun des posts à la timeline
 			posts.add(Post.entityToPost(i));
 		}
-		
+
 		return posts;
 	}
 
@@ -72,9 +68,9 @@ public class Endpoint {
 
 		StringBuilder postKey =
 				new StringBuilder()
-						.append(post.getSender())
+						.append(Long.MAX_VALUE-(new Date()).getTime())
 						.append(":")
-						.append(Long.MAX_VALUE-(new Date()).getTime());
+						.append(post.getSender());
 		StringBuilder postIndexKey =
 				new StringBuilder()
 						.append(postKey)
@@ -114,7 +110,7 @@ public class Endpoint {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		Entity result = getFollowersByUser(user, datastoreService);
-		HashSet<String> followers = (HashSet<String>) result.getProperty("followers");
+		HashSet<String> followers = (HashSet<String>) result.getProperty("following");
 
 		result.setProperty("followers", followers.add(toFollow));
 
@@ -133,7 +129,7 @@ public class Endpoint {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		Entity result = getFollowersByUser(user, datastoreService);
-		HashSet<String> followers = (HashSet<String>) result.getProperty("followers");
+		HashSet<String> followers = (HashSet<String>) result.getProperty("following");
 
 		result.setProperty("followers", followers.remove(toUnfollow));
 
@@ -149,7 +145,7 @@ public class Endpoint {
 
 	private Entity getFollowersByUser(String user, DatastoreService datastoreService) {
 		Query query = new Query("Follow")
-				.setFilter(new Query.FilterPredicate("__key__", Query.FilterOperator.EQUAL, user));
+				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, user));
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
 
 		return preparedQuery.asSingleEntity();
@@ -157,7 +153,7 @@ public class Endpoint {
 
 	private List<Entity> getAllPostIndexOfUser(@Named("user") String user, DatastoreService datastoreService) {
 		Query query = new Query("PostIndex")
-				.setFilter(new Query.FilterPredicate("__key__", Query.FilterOperator.EQUAL, user));
+				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, user));
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
 
 		return preparedQuery.asList(FetchOptions.Builder.withDefaults());
