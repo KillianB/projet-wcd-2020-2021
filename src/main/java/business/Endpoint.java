@@ -54,6 +54,11 @@ public class Endpoint {
 
 		return posts;
 	}
+	
+	@ApiMethod(name="like", httpMethod = HttpMethod.POST)
+	public boolean like(String keyReservedProperty) {
+		return LikeCounter.like(keyReservedProperty);
+	}
 
 	@ApiMethod(name = "postMessage", httpMethod = HttpMethod.POST)
 	public Entity postMessage(Post post) {
@@ -100,6 +105,10 @@ public class Endpoint {
 		Transaction transaction = datastoreService.beginTransaction();
 		datastoreService.put(newPost);
 		datastoreService.put(newPostIndex);
+		for (int i = 0; i < 10; i++) {
+			datastoreService.put(LikeCounter.generateLike(newPost.KEY_RESERVED_PROPERTY, i));
+		}
+		
 		transaction.commit();
 
 		return newPost;
