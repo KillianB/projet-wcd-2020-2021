@@ -31,7 +31,7 @@ import java.util.*;
 
 public class Endpoint {
 	@ApiMethod(name = "timeline", httpMethod = HttpMethod.GET)
-	public List<Post> getTimeline(User user) throws DatastoreException {
+	public List<Post> getTimeline(User user, String cursorString) {
 		List<Post> posts = new ArrayList<>();
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		//recup postIndex
@@ -39,8 +39,12 @@ public class Endpoint {
 				.setFilter(new Query.FilterPredicate("receivers", FilterOperator.EQUAL, user.getId()))
 				.addSort(Entity.KEY_RESERVED_PROPERTY, SortDirection.DESCENDING);
 
+		FetchOptions fetchOptions = FetchOptions.Builder.withLimit(10);
+		if (cursorString != null) {
+			fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
+		}
 		PreparedQuery prepquery = DS.prepare(query);
-		List<Entity> postsI = prepquery.asList(FetchOptions.Builder.withLimit(10));
+		QueryResultList<Entity> postsI = prepquery.asQueryResultList(fetchOptions);
 
 		//recup les parents des PostIndex (donc les posts d'origine)
 		for (Entity i : postsI) {
@@ -51,6 +55,7 @@ public class Endpoint {
 			//add chacun des posts à la timeline
 			posts.add(Post.entityToPost(i));
 		}
+	    cursorString = postsI.getCursor().toWebSafeString();
 
 		return posts;
 	}
