@@ -2,17 +2,14 @@ package business;
 
 
 import com.google.api.server.spi.auth.common.User;
-import com.google.api.server.spi.config.Api;
-import com.google.api.server.spi.config.ApiMethod;
+import com.google.api.server.spi.config.*;
 import com.google.api.server.spi.config.ApiMethod.HttpMethod;
-import com.google.api.server.spi.config.ApiNamespace;
-import com.google.api.server.spi.config.Named;
+import com.google.api.server.spi.response.CollectionResponse;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
-import com.google.appengine.repackaged.com.google.datastore.v1.client.DatastoreException;
-
 import entities.Post;
+import entities.Result;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -31,7 +28,7 @@ import java.util.*;
 
 public class Endpoint {
 	@ApiMethod(name = "timeline", httpMethod = HttpMethod.GET)
-	public List<Post> getTimeline(User user, String cursorString) {
+	public List<Post> getTimeline(User user, @Nullable @Named("cursorString") String cursorString) {
 		List<Post> posts = new ArrayList<>();
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		//recup postIndex
@@ -55,13 +52,13 @@ public class Endpoint {
 			//add chacun des posts à la timeline
 			posts.add(Post.entityToPost(i));
 		}
-	    cursorString = postsI.getCursor().toWebSafeString();
+		cursorString = postsI.getCursor().toWebSafeString();
 
 		return posts;
 	}
-	
-	@ApiMethod(name="like", httpMethod = HttpMethod.POST)
-	public boolean like(String keyReservedProperty) {
+
+	@ApiMethod(name = "like", httpMethod = HttpMethod.POST)
+	public boolean like(@Named("keyReservedProperty") String keyReservedProperty) {
 		return LikeCounter.like(keyReservedProperty);
 	}
 
@@ -78,7 +75,7 @@ public class Endpoint {
 
 		StringBuilder postKey =
 				new StringBuilder()
-						.append(Long.MAX_VALUE-(new Date()).getTime())
+						.append(Long.MAX_VALUE - (new Date()).getTime())
 						.append(":")
 						.append(post.getSender());
 		StringBuilder postIndexKey =
@@ -111,61 +108,91 @@ public class Endpoint {
 		datastoreService.put(newPost);
 		datastoreService.put(newPostIndex);
 		for (int i = 0; i < 10; i++) {
-			datastoreService.put(LikeCounter.generateLike(newPost.KEY_RESERVED_PROPERTY, i));
+			datastoreService.put(LikeCounter.generateLike(Entity.KEY_RESERVED_PROPERTY, i));
 		}
-		
+
 		transaction.commit();
 
 		return newPost;
 	}
 
 	@ApiMethod(name = "follow", httpMethod = HttpMethod.POST)
-	public void follow(@Named("user") String user, @Named("toFollow") String toFollow) {
+	public Result follow(@Named("user") String user, @Named("toFollow") String toFollow) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getFollowersByUser(user, datastoreService);
+		Entity result = getKindByKey("Follow", user, datastoreService);
 		HashSet<String> followers = (HashSet<String>) result.getProperty("following");
 
 		result.setProperty("followers", followers.add(toFollow));
 
 		List<Entity> messages = getAllPostIndexOfUser(toFollow, datastoreService);
 
-		messages.forEach(message -> message.setProperty("receivers", ((HashSet<String>)message.getProperty("receivers")).add(user)));
+		messages.forEach(message -> message.setProperty("receivers", ((HashSet<String>) message.getProperty("receivers")).add(user)));
 
 		Transaction transaction = datastoreService.beginTransaction();
 		datastoreService.put(result);
 		datastoreService.put(messages);
 		transaction.commit();
+
+		return new Result(200, "OK");
 	}
 
 	@ApiMethod(name = "unfollow", httpMethod = HttpMethod.POST)
-	public void unfollow(@Named("user") String user, @Named("toFollow") String toUnfollow) {
+	public Result unfollow(@Named("user") String user, @Named("toUnfollow") String toUnfollow) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getFollowersByUser(user, datastoreService);
+		Entity result = getKindByKey("Follow", user, datastoreService);
 		HashSet<String> followers = (HashSet<String>) result.getProperty("following");
 
 		result.setProperty("followers", followers.remove(toUnfollow));
 
 		List<Entity> messages = getAllPostIndexOfUser(toUnfollow, datastoreService);
 
-		messages.forEach(message -> message.setProperty("receivers", ((HashSet<String>)message.getProperty("receivers")).remove(user)));
+		messages.forEach(message -> message.setProperty("receivers", ((HashSet<String>) message.getProperty("receivers")).remove(user)));
 
 		Transaction transaction = datastoreService.beginTransaction();
 		datastoreService.put(result);
 		datastoreService.put(messages);
 		transaction.commit();
+
+		return new Result(200, "OK");
 	}
 
-	private Entity getFollowersByUser(String user, DatastoreService datastoreService) {
+	@ApiMethod(name = "followersList", httpMethod = HttpMethod.GET, path = "/followers/list")
+	public Result followersList(@Named("user") String user) {
+		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
+
+		return new Result(200, getKindByKey("Follow", user, datastoreService).getProperty("following"));
+	}
+
+	@ApiMethod(name = "followedList", httpMethod = HttpMethod.GET, path = "/followed/list")
+	public CollectionResponse<Entity> followedList(@Named("user") String user, @Nullable @Named("next") String cursorString) {
+		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
+
 		Query query = new Query("Follow")
-				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, user));
+				.setFilter(new Query.FilterPredicate("following", Query.FilterOperator.EQUAL, user))
+				.setKeysOnly();
+		PreparedQuery preparedQuery = datastoreService.prepare(query);
+
+		FetchOptions fetchOptions = FetchOptions.Builder.withLimit(10);
+
+		if (cursorString != null) fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
+
+		QueryResultList<Entity> resultList = preparedQuery.asQueryResultList(fetchOptions);
+		cursorString = resultList.getCursor().toWebSafeString();
+
+		return CollectionResponse.<Entity>builder().setItems(resultList).setNextPageToken(cursorString).build();
+	}
+
+	private Entity getKindByKey(String kind, String key, DatastoreService datastoreService) {
+		Query query = new Query(kind)
+				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, key));
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
 
 		return preparedQuery.asSingleEntity();
 	}
 
-	private List<Entity> getAllPostIndexOfUser(@Named("user") String user, DatastoreService datastoreService) {
+	private List<Entity> getAllPostIndexOfUser(String user, DatastoreService datastoreService) {
 		Query query = new Query("PostIndex")
 				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, user));
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
