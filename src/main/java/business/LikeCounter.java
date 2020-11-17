@@ -10,6 +10,9 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
+
+import entities.Result;
+
 import com.google.appengine.api.datastore.Query.FilterOperator;
 
 class LikeCounter {
@@ -23,7 +26,7 @@ class LikeCounter {
 	}
 	
 	
-	public static int countLike(String keyReservedProperty) {
+	public static Result countLike(String keyReservedProperty) {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		Query query = new Query("likeCounter")
 				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, FilterOperator.GREATER_THAN_OR_EQUAL, keyReservedProperty + "like0"))
@@ -31,14 +34,14 @@ class LikeCounter {
 		
 		PreparedQuery pq = DS.prepare(query);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
-		int counter = 0; 
+		Integer counter = 0; 
 		for (Entity i : result) {
 			counter += (int) i.getProperty("like");
 		}
-		return counter;
+		return new Result(200, counter);
 	}
 	
-	public static boolean like(String keyReservedProperty) {
+	public static Result like(String keyReservedProperty) {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		boolean done = false;
 		Transaction transaction = DS.beginTransaction();
@@ -52,7 +55,11 @@ class LikeCounter {
 		DS.put(like);
 		done = true;
 		transaction.commit();
+		if (done) {
+			return new Result(200,"OK");
+		} else {
+			return new Result(500, "like non comptabilisé");
+		}
 		
-		return done;
 	}
 }

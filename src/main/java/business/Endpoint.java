@@ -28,7 +28,7 @@ import java.util.*;
 
 public class Endpoint {
 	@ApiMethod(name = "timeline", httpMethod = HttpMethod.GET)
-	public List<Post> getTimeline(User user, @Nullable @Named("cursorString") String cursorString) {
+	public CollectionResponse<Post> getTimeline(User user, @Nullable @Named("cursorString") String cursorString) {
 		List<Post> posts = new ArrayList<>();
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		//recup postIndex
@@ -54,11 +54,11 @@ public class Endpoint {
 		}
 		cursorString = postsI.getCursor().toWebSafeString();
 
-		return posts;
+	    return CollectionResponse.<Post>builder().setItems(posts).setNextPageToken(cursorString).build();
 	}
 
 	@ApiMethod(name = "like", httpMethod = HttpMethod.POST)
-	public boolean like(@Named("keyReservedProperty") String keyReservedProperty) {
+	public Result like(@Named("keyReservedProperty") String keyReservedProperty) {
 		return LikeCounter.like(keyReservedProperty);
 	}
 
