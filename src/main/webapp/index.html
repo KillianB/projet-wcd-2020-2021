@@ -77,6 +77,9 @@
                     console.log("post_message:",result)
                     Profile.loadList()
                 })
+        },
+        next: function() {
+            console.log('Il se passe des trucs');
         }
     }
 
@@ -150,30 +153,36 @@
         }
     }
 
-    var Message = {
-        imageSender:'https://lh3.googleusercontent.com/a-/AOh14Gi4nloDhM3cflgm1AbQH4fE6dDLLgZlm-GjBjy1=s96-c',
-        imageMessage:'https://lh3.googleusercontent.com/a-/AOh14Gi4nloDhM3cflgm1AbQH4fE6dDLLgZlm-GjBjy1=s96-c',
+    class Message {
+        constructor(nameSender, imageSender, imageMessage, content, nbLike) {
+            this.nameSender = nameSender;
+            this.imageSender = imageSender;
+            this.imageMessage = imageMessage;
+            this.content = content;
+            this.nbLike = nbLike;
+        }
 
-        view: function() {
+        view() {
             return m('div', {class:'container box block'}, [
                 m('article', {class:'media'}, [
                     m('figure', {class:'media-left'}, [
-                        m('img', {src:Message.imageSender, class:'image is-64x64', style:'border-radius:50%'})
+                        m('img', {src:this.imageSender, class:'image is-64x64', style:'border-radius:50%'})
                     ]),
                     m('div', {class:'media-content'}, [
                         m('div', {class:'field'}, [
                             m('p', {class:'control'}, [
-                                m('strong', "Nom sender"),
+                                m('strong', this.nameSender),
                                 m('br'),
-                                m('p', "Contenu du message")
+                                m('p', this.content)
                             ])
                         ]),
                         m('div', {class:'field'}, [
-                            m('img', {src:Message.imageMessage, class:'image'})
+                            m('img', {src:this.imageMessage, class:'image'})
                         ]),
                         m('nav', {class:'level'}, [
                             m('div', {class:'level-left'}, [
-                                m('a', {class:'level-item'}, [
+                                m('p', {style:'margin-top:auto; margin-bottom:auto; margin-right:5px; font-size:15px'}, this.nbLike),
+                                m('a', {class:'level-item', onclick:this.like, style:'margin-top:auto; margin-bottom:auto'}, [
                                     m('span', {class:'icon is-small'}, [
                                         m('i', {class:'fas fa-heart'})
                                     ])
@@ -182,20 +191,34 @@
                         ])
                     ]),
                     m('div', {class:'media-right'}, [
-                        m('button', {class:'button is-info is-light is-small'}, "Follow")
+                        m('button', {class:'button is-info is-light is-small', onclick:this.follow}, "Follow")
                     ])
                 ])
             ])
-        },
-        next: function() {
+        }
 
+        follow() {
+            console.log('Un follow a eu lieu');
+        }
 
-            return Message.view()
+        like() {
+            console.log("Un like s'est ajouté");
         }
     }
 
+    const image = 'https://lh3.googleusercontent.com/a-/AOh14Gi4nloDhM3cflgm1AbQH4fE6dDLLgZlm-GjBjy1=s96-c';
+    var message = new Message("Nom du sender", image, image, "Contenu du message", 10);
+
     var TimeLine = {
-        listItems:[m(PostMessage), Message.next(), Message.next(), Message.next(), Message.next(), Message.next()],
+        listItems:[
+            m(PostMessage),
+            m(message),
+            m(message),
+            m(message),
+            m(message),
+            m(message),
+            m('button', {class:'button is-info is-outlined', onclick:Profile.next}, "Afficher plus de messages")
+        ],
         view: function() {
             return m('div', TimeLine.listItems)
         }
