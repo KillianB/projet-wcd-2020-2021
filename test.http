@@ -1,0 +1,46 @@
+GET http://localhost:8080/_ah/api/tinyApi/v1/collectionresponse_post/seriifh
+Accept: application/json
+
+###
+POST http://localhost:80/_ah/api/tinyApi/v1/like
+Content-Type: application/json
+
+{
+    "keyReservedProperty": "key"
+}
+
+###
+POST http://localhost:8080/_ah/api/tinyApi/v1/postMessage
+Content-Type: application/json
+
+{
+	"sender": "test",
+	"body": "OOF",
+	"url": ""
+}
+
+###
+POST http://localhost:8080/_ah/api/tinyApi/v1/follow
+Content-Type: application/json
+
+{
+	"user": "test",
+	"target": "test1"
+}
+
+###
+POST http://localhost:8080/_ah/api/tinyApi/v1/unfollow
+Content-Type: application/json
+
+{
+	"user": "test",
+	"target": "test1"
+}
+
+###
+GET http://localhost:8080/_ah/api/tinyApi/v1/followersList/oof
+Accept: application/json
+
+###
+GET http://localhost:8080/_ah/api/tinyApi/v1/followedList/oof
+Accept: application/json

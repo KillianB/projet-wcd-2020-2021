@@ -4,12 +4,17 @@ package business;
 import com.google.api.server.spi.config.*;
 import com.google.api.server.spi.config.ApiMethod.HttpMethod;
 import com.google.api.server.spi.response.CollectionResponse;
+import com.google.api.server.spi.response.NotFoundException;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.repackaged.com.google.datastore.v1.LookupRequest;
+import com.google.appengine.repackaged.com.google.datastore.v1.PropertyFilter;
+import entities.Follow;
 import entities.Post;
 import entities.Result;
 
+import javax.xml.bind.DatatypeConverter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -81,7 +86,7 @@ public class Endpoint {
 				new StringBuilder()
 						.append(postKey)
 						.append(":")
-						.append(Arrays.toString(messageDigest.digest((new Date()).toString().getBytes())));
+						.append(DatatypeConverter.printHexBinary(messageDigest.digest((new Date()).toString().getBytes())).toUpperCase());
 
 		Entity newPost = new Entity("Post", postKey.toString());
 		Entity newPostIndex = new Entity("PostIndex", postIndexKey.toString());
@@ -97,7 +102,7 @@ public class Endpoint {
 		List<Entity> result = preparedQuery.asList(FetchOptions.Builder.withDefaults());
 
 		List<String> keys = new ArrayList<>();
-		result.forEach(entity -> keys.add(entity.getParent().toString()));
+		result.forEach(entity -> keys.add(entity.getKey().getName()));
 
 		HashSet<String> followers = new HashSet<>(keys);
 
@@ -118,17 +123,28 @@ public class Endpoint {
 	}
 
 	@ApiMethod(name = "follow", httpMethod = HttpMethod.POST)
-	public Result follow(@Named("user") String user, @Named("toFollow") String toFollow) {
+	public Result follow(Follow follow) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService);
-		HashSet<String> followers = (HashSet<String>) result.getProperty("following");
+		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser()), datastoreService);
+		HashSet<String> followers = null;
 
-		result.setProperty("followers", followers.add(toFollow));
+		if (result == null) result = new Entity("Follow", follow.getUser());
 
-		List<Entity> messages = getAllPostIndexOfUser(toFollow, datastoreService);
+		if (result.getProperty("following") == null) followers = new HashSet<>();
+		else followers = new HashSet<>((ArrayList<String>) result.getProperty("following"));
 
-		messages.forEach(message -> message.setProperty("receivers", ((HashSet<String>) message.getProperty("receivers")).add(user)));
+		followers.add(follow.getTarget());
+		result.setProperty("following", followers);
+
+		List<Entity> messages = getAllPostIndexOfUser(follow.getTarget(), datastoreService);
+
+		messages.forEach(message -> {
+			HashSet<String> receivers = (HashSet<String>) message.getProperty("receivers");
+			if (receivers == null) receivers = new HashSet<>();
+			receivers.add(follow.getUser());
+			message.setProperty("receivers", receivers);
+		});
 
 		Transaction transaction = datastoreService.beginTransaction();
 		datastoreService.put(result);
@@ -139,17 +155,25 @@ public class Endpoint {
 	}
 
 	@ApiMethod(name = "unfollow", httpMethod = HttpMethod.POST)
-	public Result unfollow(@Named("user") String user, @Named("toUnfollow") String toUnfollow) {
+	public Result unfollow(Follow follow) throws NotFoundException {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService);
+		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser()), datastoreService);
+
+		if (result == null || result.getProperty("following") == null) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
+
 		HashSet<String> followers = (HashSet<String>) result.getProperty("following");
 
-		result.setProperty("followers", followers.remove(toUnfollow));
+		if (!followers.remove(follow.getTarget())) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
+		result.setProperty("following", followers);
 
-		List<Entity> messages = getAllPostIndexOfUser(toUnfollow, datastoreService);
+		List<Entity> messages = getAllPostIndexOfUser(follow.getTarget(), datastoreService);
 
-		messages.forEach(message -> message.setProperty("receivers", ((HashSet<String>) message.getProperty("receivers")).remove(user)));
+		messages.forEach(message -> {
+			HashSet<String> receivers = (HashSet<String>) message.getProperty("receivers");
+			receivers.remove(follow.getUser());
+			message.setProperty("receivers", receivers);
+		});
 
 		Transaction transaction = datastoreService.beginTransaction();
 		datastoreService.put(result);
@@ -160,10 +184,14 @@ public class Endpoint {
 	}
 
 	@ApiMethod(name = "followers.list", httpMethod = HttpMethod.GET)
-	public Result followersList(@Named("user") String user) {
+	public Result followersList(@Named("user") String user) throws NotFoundException {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		return new Result(200, getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService).getProperty("following"));
+		Entity follow = getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService);
+
+		if (follow == null || follow.getProperty("following") == null) throw new NotFoundException("L'utilisateur n'existe pas ou ne follow personne.");
+
+		return new Result(200, follow.getProperty("following"));
 	}
 
 	@ApiMethod(name = "followed.list", httpMethod = HttpMethod.GET)
