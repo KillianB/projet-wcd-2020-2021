@@ -121,7 +121,7 @@ public class Endpoint {
 	public Result follow(@Named("user") String user, @Named("toFollow") String toFollow) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getKindByKey("Follow", user, datastoreService);
+		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService);
 		HashSet<String> followers = (HashSet<String>) result.getProperty("following");
 
 		result.setProperty("followers", followers.add(toFollow));
@@ -142,7 +142,7 @@ public class Endpoint {
 	public Result unfollow(@Named("user") String user, @Named("toUnfollow") String toUnfollow) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getKindByKey("Follow", user, datastoreService);
+		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService);
 		HashSet<String> followers = (HashSet<String>) result.getProperty("following");
 
 		result.setProperty("followers", followers.remove(toUnfollow));
@@ -159,14 +159,14 @@ public class Endpoint {
 		return new Result(200, "OK");
 	}
 
-	@ApiMethod(name = "followersList", httpMethod = HttpMethod.GET, path = "/followers/list")
+	@ApiMethod(name = "followers.list", httpMethod = HttpMethod.GET)
 	public Result followersList(@Named("user") String user) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		return new Result(200, getKindByKey("Follow", user, datastoreService).getProperty("following"));
+		return new Result(200, getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService).getProperty("following"));
 	}
 
-	@ApiMethod(name = "followedList", httpMethod = HttpMethod.GET, path = "/followed/list")
+	@ApiMethod(name = "followed.list", httpMethod = HttpMethod.GET)
 	public CollectionResponse<Entity> followedList(@Named("user") String user, @Nullable @Named("next") String cursorString) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
@@ -185,7 +185,7 @@ public class Endpoint {
 		return CollectionResponse.<Entity>builder().setItems(resultList).setNextPageToken(cursorString).build();
 	}
 
-	private Entity getKindByKey(String kind, String key, DatastoreService datastoreService) {
+	private Entity getKindByKey(String kind, Key key, DatastoreService datastoreService) {
 		Query query = new Query(kind)
 				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, key));
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
