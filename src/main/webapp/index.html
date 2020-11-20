@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>TinyInsta</title>
+
+    <!-- Google login -->
+    <meta name="google-signin-scope" content="profile email">
+    <!-- TODO: Activer la clef correctement
+    On utilise la clef de l'exemple du prof temporairement du coup
+    <meta name="google-signin-client_id" content="1048463456874-56t3t922794hiac34phbfntkdqmt0lhl.apps.googleusercontent.com">
+    -->
+    <meta name="google-signin-client_id" content="927375242383-t21v9ml38tkh2pr30m4hqiflkl3jfohl.apps.googleusercontent.com">
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <!-- Google login -->
+
+    <!-- Mithril -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
+    <script defer
+            src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+    <script src="https://unpkg.com/mithril/mithril.js"></script>
+    <!-- Mithril -->
+
+</head>
+<body>
+<script>
+
+    var Profile={
+
+        // Attributs
+        name:"",
+        email:"",
+        ID:"",
+        url:"",
+        nextToken:"",
+        list:[],
+
+        // Fonctions
+        view: function(){
+            return m('secion', {class:'hero is-light is-fullheight'}, [
+                m('div', {class:'hero-body'}, [
+                    m('div', {class:'container', style:'top:20px'}, [
+                        m(TimeLine)
+                    ])
+                ]),
+                m('div', {class:'hero-head has-background-light', style:'position:fixed; width:100%'}, [
+                    m('header', {class:'navbar'}, [
+                        m('div', {class:'container'}, [
+                            m('div', {class:'navbar-brand'}, [
+                                m('h1', {class:'navbar-item title', style:'margin-top:auto; margin-bottom:auto'}, "TinyInsta"),
+                                m("img", {
+                                    src:Profile.url,
+                                    class:'navbar-item image is-64x64',
+                                    style:'border-radius:50%; margin-top:auto; margin-bottom:auto'
+                                }),
+                                m("h1", {class: 'navbar-item title', style:'margin-top:auto; margin-bottom:auto'}, Profile.name)
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        },
+        postMessage: function() {
+            var data={
+                'url': "https://dummyimage.com/320x200/000/fff&text="+Date.now(),
+                'body': "paglop "+Date.now(),
+                'sender': Profile.ID
+            }
+            console.log("post:"+data)
+            return m.request({
+                method: "POST",
+                url: "_ah/api/tinyApi/v1/postMessage"+'?access_token='+encodeURIComponent(Profile.ID),
+                params: data,
+            })
+                .then(function(result) {
+                    console.log("post_message:",result)
+                    Profile.loadList()
+                })
+        }
+    }
+
+    function onSignIn(googleUser) {
+        var profile = googleUser.getBasicProfile();
+
+        Profile.ID=googleUser.getAuthResponse().id_token;
+        Profile.name=profile.getName();
+        Profile.email=profile.getEmail();
+        Profile.url=profile.getImageUrl();
+
+        m.route.set('/secret');
+    }
+
+    var Login = {
+        view: function() {
+            return m('secion', {class:'hero is-light is-fullheight'}, [
+                m('div', {class:'hero-head'}, [
+                    m('header', {class:'navbar'}, [
+                        m('div', {class:'container'}, [
+                            m('div', {class:'navbar-brand'}, [
+                                m('h1', {class:'navbar-item title', style:'margin-top:auto; margin-bottom:auto'}, "TinyInsta"),
+                                m('div', {
+                                    class:'navbar-item g-signin2',
+                                    style:'margin-top:auto; margin-bottom:auto',
+                                    'data-theme':'dark',
+                                    'data-onsuccess':'onSignIn'
+                                })
+                            ])
+                        ])
+                    ])
+                ]),
+                m('div', {class:'hero-body'}, [
+                    m('div', {class:'container has-text-centered'}, [
+                        m('h1', {class:'title', style:'width:50%; margin-left:auto; margin-right:auto'},
+                            "Pour utiliser TinyInsta il est nécessaire de se connecter avec son compte Google")
+                    ])
+                ])
+            ])
+        }
+    }
+
+    var PostMessage = {
+        messageContent:"",
+        imageURL:"",
+        view: function() {
+            return m('div', {class:'container box block'}, [
+                m('article', {class:'media'}, [
+                    m('figure', {class:'media-left'}),
+                    m('div', {class:'media-content'}, [
+                        m('div', {class:'field'}, [
+                            m('p', {class:'control'}, [
+                                m('textarea', {class:'textarea', placeholder:'Écrire un message'}, PostMessage.messageContent)
+                            ])
+                        ]),
+                        m('div', {class:'field'}, [
+                            m('p', {class:'control'}, [
+                                m('input', {class:'input', type:'text', placeholder:'URL image'}, PostMessage.messageContent)
+                            ])
+                        ]),
+                        m('nav', {class:'level'}, [
+                            m('div', {class:'level-left'}, [
+                                m('div', {class:'level-item'}, [
+                                    m('a', {class:'button is-info is-light'}, 'Envoyer')
+                                ])
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        }
+    }
+
+    var Message = {
+        imageSender:'https://lh3.googleusercontent.com/a-/AOh14Gi4nloDhM3cflgm1AbQH4fE6dDLLgZlm-GjBjy1=s96-c',
+        imageMessage:'https://lh3.googleusercontent.com/a-/AOh14Gi4nloDhM3cflgm1AbQH4fE6dDLLgZlm-GjBjy1=s96-c',
+
+        view: function() {
+            return m('div', {class:'container box block'}, [
+                m('article', {class:'media'}, [
+                    m('figure', {class:'media-left'}, [
+                        m('img', {src:Message.imageSender, class:'image is-64x64', style:'border-radius:50%'})
+                    ]),
+                    m('div', {class:'media-content'}, [
+                        m('div', {class:'field'}, [
+                            m('p', {class:'control'}, [
+                                m('strong', "Nom sender"),
+                                m('br'),
+                                m('p', "Contenu du message")
+                            ])
+                        ]),
+                        m('div', {class:'field'}, [
+                            m('img', {src:Message.imageMessage, class:'image'})
+                        ]),
+                        m('nav', {class:'level'}, [
+                            m('div', {class:'level-left'}, [
+                                m('a', {class:'level-item'}, [
+                                    m('span', {class:'icon is-small'}, [
+                                        m('i', {class:'fas fa-heart'})
+                                    ])
+                                ])
+                            ])
+                        ])
+                    ]),
+                    m('div', {class:'media-right'}, [
+                        m('button', {class:'button is-info is-light is-small'}, "Follow")
+                    ])
+                ])
+            ])
+        },
+        next: function() {
+
+
+            return Message.view()
+        }
+    }
+
+    var TimeLine = {
+        listItems:[m(PostMessage), Message.next(), Message.next(), Message.next(), Message.next(), Message.next()],
+        view: function() {
+            return m('div', TimeLine.listItems)
+        }
+    }
+
+    m.route(document.body, "/secret", {
+        "/secret": { onmatch: function() {
+                if (Profile.ID=="") {m.route.set("/login")}
+                else return Profile
+            }},
+        "/login": Login
+    })
+
+</script>
+</body>
+</html>
+
+
