@@ -42,8 +42,7 @@
 
     <checkstyle.skip>true</checkstyle.skip>
 
-    <endpoints.project.id>sobike44</endpoints.project.id>
-<!--    TODO: A CHANGER-->
+    <endpoints.project.id>tinyinsta-295118.ew.r</endpoints.project.id>
   </properties>
   <dependencies>
     <!-- Compile/runtime dependencies -->

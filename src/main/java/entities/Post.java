@@ -9,6 +9,9 @@ public class Post {
 	private String body;
 	private String url;
 
+	public Post() {
+	}
+
 	public Post(String sender, String body, String url) {
 		this.sender = sender;
 		this.body = body;

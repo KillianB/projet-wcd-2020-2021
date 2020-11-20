@@ -1,7 +1,6 @@
 package business;
 
 
-import com.google.api.server.spi.auth.common.User;
 import com.google.api.server.spi.config.*;
 import com.google.api.server.spi.config.ApiMethod.HttpMethod;
 import com.google.api.server.spi.response.CollectionResponse;
@@ -21,19 +20,19 @@ import java.util.*;
 		clientIds = "1048463456874-56t3t922794hiac34phbfntkdqmt0lhl.apps.googleusercontent.com",
 		namespace =
 		@ApiNamespace(
-				ownerDomain = "https://tinyinsta-295118.ew.r.appspot.com",
-				ownerName = "https://tinyinsta-295118.ew.r.appspot.com",
+				ownerDomain = "tinyinsta-295118.ew.r.appspot.com",
+				ownerName = "tinyinsta-295118.ew.r.appspot.com",
 				packagePath = "")
 )
 
 public class Endpoint {
 	@ApiMethod(name = "timeline", httpMethod = HttpMethod.GET)
-	public CollectionResponse<Post> getTimeline(User user, @Nullable @Named("cursorString") String cursorString) {
+	public CollectionResponse<Post> getTimeline(@Named("user") String user, @Nullable @Named("cursorString") String cursorString) {
 		List<Post> posts = new ArrayList<>();
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		//recup postIndex
 		Query query = new Query("PostIndex")
-				.setFilter(new Query.FilterPredicate("receivers", FilterOperator.EQUAL, user.getId()))
+				.setFilter(new Query.FilterPredicate("receivers", FilterOperator.EQUAL, user))
 				.addSort(Entity.KEY_RESERVED_PROPERTY, SortDirection.DESCENDING);
 
 		FetchOptions fetchOptions = FetchOptions.Builder.withLimit(10);
@@ -104,9 +103,11 @@ public class Endpoint {
 
 		newPostIndex.setProperty("receivers", followers);
 
-		Transaction transaction = datastoreService.beginTransaction();
+		Transaction transaction = datastoreService.beginTransaction(TransactionOptions.Builder.withXG(true));
+
 		datastoreService.put(newPost);
 		datastoreService.put(newPostIndex);
+
 		for (int i = 0; i < 10; i++) {
 			datastoreService.put(LikeCounter.generateLike(Entity.KEY_RESERVED_PROPERTY, i));
 		}
