@@ -3,11 +3,13 @@ package entities;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Key;
 
 public class Post {
 	private String sender;
 	private String body;
 	private String url;
+	private Key key;
 
 	public Post() {
 	}
@@ -16,8 +18,15 @@ public class Post {
 		this.sender = sender;
 		this.body = body;
 		this.url = url;
+		this.key = null;
 	}
 
+	private Post(String sender, String body, String url, Key key) {
+		this.sender = sender;
+		this.body = body;
+		this.url = url;
+		this.key = key;
+	}
 	public String getSender() {
 		return sender;
 	}
@@ -45,7 +54,7 @@ public class Post {
 	public static Post entityToPost(Entity i) {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 
-		Post post = new Post((String)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"));
+		Post post = new Post((String)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey());
 
 		return post;
 	}
