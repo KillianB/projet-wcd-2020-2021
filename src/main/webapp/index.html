@@ -6,11 +6,7 @@
 
     <!-- Google login -->
     <meta name="google-signin-scope" content="profile email">
-    <!-- TODO: Activer la clef correctement
-    On utilise la clef de l'exemple du prof temporairement du coup
     <meta name="google-signin-client_id" content="1048463456874-56t3t922794hiac34phbfntkdqmt0lhl.apps.googleusercontent.com">
-    -->
-    <meta name="google-signin-client_id" content="927375242383-t21v9ml38tkh2pr30m4hqiflkl3jfohl.apps.googleusercontent.com">
     <script src="https://apis.google.com/js/platform.js" async defer></script>
     <!-- Google login -->
 
@@ -26,7 +22,7 @@
 <body>
 <script>
 
-    var Profile={
+    let Profile={
 
         // Attributs
         name:"",
@@ -61,30 +57,71 @@
                 ])
             ])
         },
-        postMessage: function() {
-            var data={
-                'url': "https://dummyimage.com/320x200/000/fff&text="+Date.now(),
-                'body': "paglop "+Date.now(),
+        postMessage: function(content, image) {
+            let data={
+                'url': image,
+                'body': content,
                 'sender': Profile.ID
             }
-            console.log("post:"+data)
             return m.request({
                 method: "POST",
                 url: "_ah/api/tinyApi/v1/postMessage"+'?access_token='+encodeURIComponent(Profile.ID),
-                params: data,
+                params: data
             })
                 .then(function(result) {
-                    console.log("post_message:",result)
-                    Profile.loadList()
+                    console.log("post_message: ",result);
                 })
         },
+        loadList: function() {
+            return m.request({
+                method: "GET",
+                url: "_ah/api/tinyApi/v1/collectionresponse_entity"+'?access_token=' + encodeURIComponent(Profile.ID)
+            })
+                .then(function(result) {
+                    console.log("load_list:",result)
+                    Profile.list=result.items
+                    if ('nextPageToken' in result) {
+                        Profile.nextToken= result.nextPageToken
+                    } else {
+                        Profile.nextToken=""
+                    }})
+        },
         next: function() {
-            console.log('Il se passe des trucs');
+            return m.request({
+                method: "GET",
+                url: "_ah/api/myApi/v1/collectionresponse_entity",
+                params: {
+                    'next':Profile.nextToken,
+                    'access_token': encodeURIComponent(Profile.ID)
+                }
+            })
+                .then(function(result) {
+                    console.log("next:",result)
+                    result.items.map(function(item){Profile.list.push(item)})
+                    if ('nextPageToken' in result) {
+                        Profile.nextToken= result.nextPageToken
+                    } else {
+                        Profile.nextToken=""
+                    }})
+        },
+        follow: function(user) {
+            let data = {
+                "user": Profile.ID,
+                "target": user
+            }
+            return m.request({
+                method: "POST",
+                url: "_ah/api/tinyApi/v1/follow"+'?access_token='+encodeURIComponent(Profile.ID),
+                params: data
+            })
+                .then(function(result) {
+                    console.log("follow: ",result);
+                })
         }
     }
 
     function onSignIn(googleUser) {
-        var profile = googleUser.getBasicProfile();
+        let profile = googleUser.getBasicProfile();
 
         Profile.ID=googleUser.getAuthResponse().id_token;
         Profile.name=profile.getName();
@@ -94,7 +131,7 @@
         m.route.set('/secret');
     }
 
-    var Login = {
+    let Login = {
         view: function() {
             return m('secion', {class:'hero is-light is-fullheight'}, [
                 m('div', {class:'hero-head'}, [
@@ -122,34 +159,54 @@
         }
     }
 
-    var PostMessage = {
-        messageContent:"",
-        imageURL:"",
+    let PostMessage = {
+        content:"",
+        image:"",
         view: function() {
             return m('div', {class:'container box block'}, [
                 m('article', {class:'media'}, [
-                    m('figure', {class:'media-left'}),
                     m('div', {class:'media-content'}, [
-                        m('div', {class:'field'}, [
-                            m('p', {class:'control'}, [
-                                m('textarea', {class:'textarea', placeholder:'Écrire un message'}, PostMessage.messageContent)
-                            ])
-                        ]),
-                        m('div', {class:'field'}, [
-                            m('p', {class:'control'}, [
-                                m('input', {class:'input', type:'text', placeholder:'URL image'}, PostMessage.messageContent)
-                            ])
-                        ]),
-                        m('nav', {class:'level'}, [
-                            m('div', {class:'level-left'}, [
-                                m('div', {class:'level-item'}, [
-                                    m('a', {class:'button is-info is-light'}, 'Envoyer')
+                        m('form', {name:'f'}, [
+                            m('div', {class:'field'}, [
+                                m('p', {class:'control'}, [
+                                    m('textarea', {
+                                        class:'textarea',
+                                        placeholder:'Écrire un message',
+                                        oninput: PostMessage.updateContent,
+                                        value: PostMessage.content
+                                    })
+                                ])
+                            ]),
+                            m('div', {class:'field'}, [
+                                m('p', {class:'control'}, [
+                                    m('input', {
+                                        class:'input',
+                                        type:'text',
+                                        placeholder:'URL image',
+                                        oninput: PostMessage.updateImage,
+                                        value: PostMessage.image})
+                                ])
+                            ]),
+                            m('nav', {class:'level'}, [
+                                m('div', {class:'level-left'}, [
+                                    m('div', {class:'level-item'}, [
+                                        m('a', {onclick:PostMessage.postMessage ,class:'button is-info is-light'}, 'Envoyer')
+                                    ])
                                 ])
                             ])
                         ])
                     ])
                 ])
             ])
+        },
+        updateContent: function (text) {
+            PostMessage.content = text.target.value;
+        },
+        updateImage: function (url) {
+            PostMessage.image = url.target.value;
+        },
+        postMessage: function() {
+            Profile.postMessage(PostMessage.content, PostMessage.image);
         }
     }
 
@@ -198,7 +255,7 @@
         }
 
         follow() {
-            console.log('Un follow a eu lieu');
+            console.log(Profile.follow(Profile.ID));
         }
 
         like() {
@@ -207,9 +264,9 @@
     }
 
     const image = 'https://lh3.googleusercontent.com/a-/AOh14Gi4nloDhM3cflgm1AbQH4fE6dDLLgZlm-GjBjy1=s96-c';
-    var message = new Message("Nom du sender", image, image, "Contenu du message", 10);
+    let message = new Message("Nom du sender", image, image, "Contenu du message", 10);
 
-    var TimeLine = {
+    let TimeLine = {
         listItems:[
             m(PostMessage),
             m(message),
@@ -226,7 +283,7 @@
 
     m.route(document.body, "/secret", {
         "/secret": { onmatch: function() {
-                if (Profile.ID=="") {m.route.set("/login")}
+                if (Profile.ID==="") {m.route.set("/login")}
                 else return Profile
             }},
         "/login": Login
