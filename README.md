@@ -9,5 +9,13 @@
  - URL interface REST : [Interface REST]()
  
 ## Les kinds utilisés
+ - Post
+ - PostIndex
+ - LikeCounter
+ - Follow  
+
+TODO
+
+## Difficultés rencontrées et implémentation
 TODO
 
