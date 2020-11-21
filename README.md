@@ -6,8 +6,8 @@
     - FulgurentKille : Damien MARTIN (VICO)
     - KillianB : Killian BARREAU (VICO)
     - adesmontils : Alexandre DESMONTILS (ALMA)
- - URL interface REST : [Interface REST]()
- 
+ - URL interface REST : [Interface REST](https://endpointsportal.tinyinsta-295118.cloud.goog)
+
 ## Les kinds utilisés
  - Post
  - PostIndex

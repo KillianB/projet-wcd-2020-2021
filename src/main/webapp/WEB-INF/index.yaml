@@ -1,7 +1,0 @@
-indexes:
-- kind: PostIndex
-  properties:
-    - name: receivers
-- kind: Follow
-  properties:
-    - name: following
