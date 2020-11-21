@@ -8,8 +8,6 @@ import com.google.api.server.spi.response.NotFoundException;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
-import com.google.appengine.repackaged.com.google.datastore.v1.LookupRequest;
-import com.google.appengine.repackaged.com.google.datastore.v1.PropertyFilter;
 import entities.Follow;
 import entities.Post;
 import entities.Result;
@@ -137,18 +135,8 @@ public class Endpoint {
 		followers.add(follow.getTarget());
 		result.setProperty("following", followers);
 
-		List<Entity> messages = getAllPostIndexOfUser(follow.getTarget(), datastoreService);
-
-		messages.forEach(message -> {
-			HashSet<String> receivers = (HashSet<String>) message.getProperty("receivers");
-			if (receivers == null) receivers = new HashSet<>();
-			receivers.add(follow.getUser());
-			message.setProperty("receivers", receivers);
-		});
-
 		Transaction transaction = datastoreService.beginTransaction();
 		datastoreService.put(result);
-		datastoreService.put(messages);
 		transaction.commit();
 
 		return new Result(200, "OK");
@@ -167,17 +155,8 @@ public class Endpoint {
 		if (!followers.remove(follow.getTarget())) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
 		result.setProperty("following", followers);
 
-		List<Entity> messages = getAllPostIndexOfUser(follow.getTarget(), datastoreService);
-
-		messages.forEach(message -> {
-			HashSet<String> receivers = (HashSet<String>) message.getProperty("receivers");
-			receivers.remove(follow.getUser());
-			message.setProperty("receivers", receivers);
-		});
-
 		Transaction transaction = datastoreService.beginTransaction();
 		datastoreService.put(result);
-		datastoreService.put(messages);
 		transaction.commit();
 
 		return new Result(200, "OK");
@@ -219,13 +198,5 @@ public class Endpoint {
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
 
 		return preparedQuery.asSingleEntity();
-	}
-
-	private List<Entity> getAllPostIndexOfUser(String user, DatastoreService datastoreService) {
-		Query query = new Query("PostIndex")
-				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, user));
-		PreparedQuery preparedQuery = datastoreService.prepare(query);
-
-		return preparedQuery.asList(FetchOptions.Builder.withDefaults());
 	}
 }
