@@ -11,8 +11,8 @@ import com.google.appengine.api.datastore.Query.SortDirection;
 import entities.Follow;
 import entities.Post;
 import entities.Result;
+import jakarta.xml.bind.DatatypeConverter;
 
-import javax.xml.bind.DatatypeConverter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
