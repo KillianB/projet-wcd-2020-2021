@@ -1,6 +1,7 @@
 indexes:
-- kind: Friend 
-  properties: 
-    - name: friends 
-    - name: age 
-    
+- kind: PostIndex
+  properties:
+    - name: receivers
+- kind: Follow
+  properties:
+    - name: following
