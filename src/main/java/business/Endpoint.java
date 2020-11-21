@@ -66,6 +66,10 @@ public class Endpoint {
 		return LikeCounter.like(key.replace("%3A", ":"));
 	}
 
+	@ApiMethod(name = "getCountLike", httpMethod = HttpMethod.GET)
+	public Result getCountLike(@Named("keystring") String key) {
+		return LikeCounter.countLike(key.replace("%3A", ":"));
+	}
 	@ApiMethod(name = "postMessage", httpMethod = HttpMethod.POST)
 	public Entity postMessage(Post post) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();

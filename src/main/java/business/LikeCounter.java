@@ -28,9 +28,9 @@ class LikeCounter {
 
 		PreparedQuery pq = DS.prepare(query);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
-		int counter = 0;
+		long counter = 0;
 		for (Entity i : result) {
-			counter += (int) i.getProperty("like");
+			counter += (long) i.getProperty("like");
 		}
 		return new Result(200, counter);
 	}
