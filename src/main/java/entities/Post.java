@@ -54,8 +54,6 @@ public class Post {
 	public static Post entityToPost(Entity i) {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 
-		Post post = new Post((String)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey());
-
-		return post;
+		return new Post((String)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey());
 	}
 }

@@ -62,7 +62,6 @@ public class Endpoint {
 
 	@ApiMethod(name = "like", httpMethod = HttpMethod.POST)
 	public Result like(@Named("keyString") String key) throws EntityNotFoundException {
-		System.out.println();
 		return LikeCounter.like(key.replace("%3A", ":"));
 	}
 
