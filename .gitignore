@@ -5,3 +5,8 @@
 # Maven and Java
 target/
 /bin/
+
+# Eclipse
+.classpath
+.project
+.settings
