@@ -31,37 +31,39 @@ import java.util.*;
 public class Endpoint {
 	@ApiMethod(name = "timeline", httpMethod = HttpMethod.GET)
 	public CollectionResponse<Post> getTimeline(@Named("user") String user, @Nullable @Named("cursorString") String cursorString) {
-		List<Post> posts = new ArrayList<>();
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		//recup postIndex
 		Query query = new Query("PostIndex")
 				.setFilter(new Query.FilterPredicate("receivers", FilterOperator.EQUAL, user))
-				.addSort(Entity.KEY_RESERVED_PROPERTY, SortDirection.DESCENDING);
+				.addSort(Entity.KEY_RESERVED_PROPERTY, SortDirection.DESCENDING)
+				.setKeysOnly();
 
 		FetchOptions fetchOptions = FetchOptions.Builder.withLimit(10);
+
 		if (cursorString != null) {
 			fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
 		}
+
 		PreparedQuery prepquery = DS.prepare(query);
 		QueryResultList<Entity> postsI = prepquery.asQueryResultList(fetchOptions);
 
-		//recup les parents des PostIndex (donc les posts d'origine)
-		for (Entity i : postsI) {
-			query = new Query("Post")
-					.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, FilterOperator.EQUAL, i.getParent()));
-			PreparedQuery pq = DS.prepare(query);
-			List<Entity> message = pq.asList(FetchOptions.Builder.withDefaults());
-			//add chacun des posts à la timeline
-			posts.add(Post.entityToPost(i));
-		}
+		ArrayList<Key> keys = new ArrayList<>();
+		postsI.forEach(entity -> keys.add(entity.getParent()));
+
+		Map<Key, Entity> msgs = DS.get(keys);
+
 		cursorString = postsI.getCursor().toWebSafeString();
+
+		List<Post> posts = new ArrayList<>();
+		msgs.values().forEach(entity -> posts.add(Post.entityToPost(entity)));
 
 	    return CollectionResponse.<Post>builder().setItems(posts).setNextPageToken(cursorString).build();
 	}
 
 	@ApiMethod(name = "like", httpMethod = HttpMethod.POST)
-	public Result like(@Named("keyReservedProperty") String keyReservedProperty) {
-		return LikeCounter.like(keyReservedProperty);
+	public Result like(@Named("keyString") String key) throws EntityNotFoundException {
+		System.out.println();
+		return LikeCounter.like(key.replace("%3A", ":"));
 	}
 
 	@ApiMethod(name = "postMessage", httpMethod = HttpMethod.POST)
@@ -87,7 +89,7 @@ public class Endpoint {
 						.append(DatatypeConverter.printHexBinary(messageDigest.digest((new Date()).toString().getBytes())).toUpperCase());
 
 		Entity newPost = new Entity("Post", postKey.toString());
-		Entity newPostIndex = new Entity("PostIndex", postIndexKey.toString());
+		Entity newPostIndex = new Entity("PostIndex", postIndexKey.toString(), newPost.getKey());
 
 		newPost.setProperty("sender", post.getSender());
 		newPost.setProperty("body", post.getBody());
@@ -112,7 +114,7 @@ public class Endpoint {
 		datastoreService.put(newPostIndex);
 
 		for (int i = 0; i < 10; i++) {
-			datastoreService.put(LikeCounter.generateLike(Entity.KEY_RESERVED_PROPERTY, i));
+			datastoreService.put(LikeCounter.generateLike(postKey.toString(), i));
 		}
 
 		transaction.commit();
