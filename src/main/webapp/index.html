@@ -184,7 +184,6 @@
 
         // Fonctions
         view: function(){
-            console.log(Profile.email);
             return m('secion', {class:'hero is-light is-fullheight',  id:"PAGE"}, [
                 // Page body
                 m('div', {class:'hero-body'}, [
@@ -240,6 +239,7 @@
                 ])
             ])
         },
+        updateUser: function() {},
         postMessage: function(content, image) {
             // On montre à l'utilisateur que l'on envoi le message
             PostMessageButton.loading();
@@ -506,6 +506,8 @@
         Profile.name=profile.getName();
         Profile.email=profile.getEmail();
         Profile.url=profile.getImageUrl();
+
+        Profile.updateUser();
 
         m.route.set('/secret');
     }
