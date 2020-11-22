@@ -51,10 +51,14 @@ Création d'un message avec 500 followers :
 ### Afficher les posts
 
 Le second benchmark est le suivant : combien de temps prends l'affichage des posts d'une personne par 10, 100 ou 500 posts ?
+Le servlet qui nous a permis de réaliser les mesures est src/java/tests/getNewPostsMeasure.java. Pour des raisons inconnues il renvoie rarement des résultats.
 
-Création d'un message avec 10 posts : 
-Création d'un message avec 100 posts : 
-Création d'un message avec 500 posts : 
+![screen des resultats obtenus](/screens/screenFromMeasureGetTimeLine.png? "screen des résultats obtenus")
+
+
+réception de 10 posts : 998 ms \
+réception de 100 posts : 959 ms \
+réception de 500 posts : 914 ms.
 
 ### Like par seconde
 
