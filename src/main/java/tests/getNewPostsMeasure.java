@@ -93,8 +93,23 @@ public class getNewPostsMeasure extends HttpServlet {
         List<Key> postKeys = new ArrayList<>();
         postIndex.forEach(index -> postKeys.add(index.getParent()));
 
+        List<Entity> likeToDelete;
+        List<Key> likeKeyToDelete = new ArrayList<>();
+        for (Key key : postKeys) {
+            query = new Query("LikeCounter")
+                    .setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.GREATER_THAN_OR_EQUAL, KeyFactory.createKey(KeyFactory.createKey("Post", key.toString()), "LikeCounter", key.toString() + ":like:0")))
+                    .setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.LESS_THAN, KeyFactory.createKey(KeyFactory.createKey("Post", key.toString()), "LikeCounter", key.toString() + ":like:10")))
+                    .setKeysOnly();
+
+            preparedQuery = datastoreService.prepare(query);
+            likeToDelete =preparedQuery.asList(FetchOptions.Builder.withDefaults());
+            likeToDelete.forEach(i -> likeKeyToDelete.add(i.getKey()));
+
+        }
+
         datastoreService.delete(postIndexKeys);
         datastoreService.delete(postKeys);
+        datastoreService.delete(likeKeyToDelete);
     }
     //method copied from Endpoint (impossible to use it directly)
     public Result unfollow(Follow follow) throws NotFoundException {
