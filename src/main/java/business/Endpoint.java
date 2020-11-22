@@ -85,6 +85,8 @@ public class Endpoint {
 		if (result.getProperty("following") == null) followers = new HashSet<>();
 		else followers = new HashSet<>((ArrayList<String>) result.getProperty("following"));
 
+		if (followers.size() + 1 > 20000) throw new ArrayStoreException("On ne peut pas follow plus de 20000 personnes.");
+
 		followers.add(follow.getTarget());
 		result.setProperty("following", followers);
 
