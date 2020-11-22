@@ -15,6 +15,7 @@ public class Post {
 	private String body;
 	private String url;
 	private Key key;
+	private int like;
 
 	public Post() {
 	}
@@ -26,7 +27,7 @@ public class Post {
 		this.key = null;
 	}
 
-	private Post(String sender, String body, String url, Key key) {
+	private Post(String sender, String body, String url, Key key, int like) {
 		this.sender = sender;
 		this.body = body;
 		this.url = url;
@@ -115,9 +116,13 @@ public class Post {
 	public Key getKey() {
 		return this.key;
 	}
+
+	public int getLike() {
+		return this.like;
+	}
 	public static Post entityToPost(Entity i) {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 
-		return new Post((String)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey());
+		return new Post((String)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey(), (int)LikeCounter.countLike(i.getKey().toString()).getObject());
 	}
 }
