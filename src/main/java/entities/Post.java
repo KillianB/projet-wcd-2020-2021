@@ -25,6 +25,7 @@ public class Post {
 		this.body = body;
 		this.url = url;
 		this.key = null;
+		this.like = 0;
 	}
 
 	private Post(String sender, String body, String url, Key key, long like) {
