@@ -1,5 +1,6 @@
 package entities;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -22,15 +23,21 @@ public class LikeCounter {
 
 	public static Result countLike(Key key) {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
-		Query query = new Query("LikeCounter")
-				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, FilterOperator.GREATER_THAN_OR_EQUAL, KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:0")))
-				.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, FilterOperator.LESS_THAN, KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:10")));
+		//Query query = new Query("LikeCounter")
+		//		.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, FilterOperator.GREATER_THAN_OR_EQUAL, KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:0")))
+		//		.setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, FilterOperator.LESS_THAN, KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:10")));
 
-		PreparedQuery pq = DS.prepare(query);
-		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+		//PreparedQuery pq = DS.prepare(query);
+		Entity oneCounter;
 		long counter = 0;
-		for (Entity i : result) {
-			counter += (long) i.getProperty("like");
+		for (int i = 0; i < 10; i++) {
+			try {
+				oneCounter = DS.get(KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:"+i));
+				counter += (long) oneCounter.getProperty("like");
+			} catch (EntityNotFoundException e) {
+				e.printStackTrace();
+			}
+
 		}
 		return new Result(200, counter);
 	}
