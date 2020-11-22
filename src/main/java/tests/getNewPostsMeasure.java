@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 @WebServlet(
-        name = "HelloAppEngine",
+        name = "getTimeLineMeasure",
         urlPatterns = {"/getNewPostMeasure"}
 )
 public class getNewPostsMeasure extends HttpServlet {
@@ -33,7 +33,7 @@ public class getNewPostsMeasure extends HttpServlet {
                 .addSort(Entity.KEY_RESERVED_PROPERTY, Query.SortDirection.DESCENDING)
                 .setKeysOnly();
 
-        FetchOptions fetchOptions = FetchOptions.Builder.withDefaults();
+        FetchOptions fetchOptions = FetchOptions.Builder.withLimit(10);
 
         if (cursorString != null) {
             fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
@@ -180,6 +180,8 @@ public class getNewPostsMeasure extends HttpServlet {
         }
         moyenne10 = moyenne10/30;
         response.getWriter().println("On 30 tests, getting 10 news posts, the getTimeLine method perform on average " + moyenne10 + " ms.");
+        //delete created msg
+        deleteMsgTo(user2);
 
         List<Long> resultOfTests100 = new ArrayList<Long>();
         for (int i = 0; i < 30; i++){
@@ -197,6 +199,8 @@ public class getNewPostsMeasure extends HttpServlet {
         }
         moyenne100 = moyenne100/30;
         response.getWriter().println("On 30 tests, getting 100 news posts, the getTimeLine method perform on average " + moyenne100 + " ms.");
+        //delete created msg
+        deleteMsgTo(user2);
 
         List<Long> resultOfTests500 = new ArrayList<Long>();
         for (int i = 0; i < 30; i++){
@@ -214,6 +218,8 @@ public class getNewPostsMeasure extends HttpServlet {
         }
         moyenne500 = moyenne500/30;
         response.getWriter().println("On 30 tests, getting 500 news posts, the getTimeLine method perform on average " + moyenne500 + " ms.");
+        //delete created msg
+        deleteMsgTo(user2);
 
         //delete msg and follow used during the test
         try {
