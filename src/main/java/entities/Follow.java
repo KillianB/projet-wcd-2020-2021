@@ -1,30 +1,30 @@
 package entities;
 
 public class Follow {
-	private String user;
-	private String target;
+	private User user;
+	private User target;
 
 	public Follow() {
 	}
 
-	public Follow(String user, String target) {
+	public Follow(User user, User target) {
 		this.user = user;
 		this.target = target;
 	}
 
-	public String getUser() {
+	public User getUser() {
 		return user;
 	}
 
-	public void setUser(String user) {
+	public void setUser(User user) {
 		this.user = user;
 	}
 
-	public String getTarget() {
+	public User getTarget() {
 		return target;
 	}
 
-	public void setTarget(String target) {
+	public void setTarget(User target) {
 		this.target = target;
 	}
 }

@@ -2,6 +2,7 @@ package tests;
 
 import com.google.appengine.api.datastore.*;
 import entities.Post;
+import entities.User;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -27,7 +28,7 @@ public class AddPostTest extends HttpServlet {
 
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		String toFollow = "ToFollowTest";
+		User toFollow = new User("ToFollowTest", "", "");
 		String followers = "TestUser";
 		long startTime = 0;
 		long endTime = 0;
@@ -76,14 +77,14 @@ public class AddPostTest extends HttpServlet {
 		}
 	}
 
-	private void addFollowers(String toFollow, String followersName, int start, int end, DatastoreService datastoreService) {
+	private void addFollowers(User toFollow, String followersName, int start, int end, DatastoreService datastoreService) {
 		Entity follow = null;
 		HashSet<String> following = null;
 
 		for (int i = start; i <= end; i++) {
 			follow = new Entity("Follow", followersName + i);
 			following = new HashSet<>();
-			following.add(toFollow);
+			following.add(toFollow.getEmail());
 			follow.setProperty("following", following);
 
 			datastoreService.put(follow);

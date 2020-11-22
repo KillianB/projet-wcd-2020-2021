@@ -8,10 +8,7 @@ import com.google.api.server.spi.response.NotFoundException;
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
-import entities.Follow;
-import entities.LikeCounter;
-import entities.Post;
-import entities.Result;
+import entities.*;
 
 import java.util.*;
 
@@ -73,17 +70,39 @@ public class Endpoint {
 		return Post.postMessage(post);
 	}
 
+	@ApiMethod(name = "updateUser", httpMethod = HttpMethod.POST)
+	public Entity updateUser(User user) {
+		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
+
+		Entity userDB;
+
+		try {
+			userDB = datastoreService.get(KeyFactory.createKey("User", user.getEmail()));
+		} catch (EntityNotFoundException e) {
+			userDB = new Entity("User", user.getEmail());
+		}
+
+		userDB.setProperty("name", user.getName());
+		userDB.setProperty("urlAvatar", user.getUrlAvatar());
+
+		Transaction transaction = datastoreService.beginTransaction();
+		datastoreService.put(userDB);
+		transaction.commit();
+
+		return userDB;
+	}
+
 	@ApiMethod(name = "follow", httpMethod = HttpMethod.POST)
 	public Result follow(Follow follow) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser()), datastoreService);
-		HashSet<String> followers = null;
+		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser().getEmail()), datastoreService);
+		HashSet<User> followers = null;
 
-		if (result == null) result = new Entity("Follow", follow.getUser());
+		if (result == null) result = new Entity("Follow", follow.getUser().getEmail());
 
 		if (result.getProperty("following") == null) followers = new HashSet<>();
-		else followers = new HashSet<>((ArrayList<String>) result.getProperty("following"));
+		else followers = new HashSet<>((ArrayList<User>) result.getProperty("following"));
 
 		if (followers.size() + 1 > 20000) throw new ArrayStoreException("On ne peut pas follow plus de 20000 personnes.");
 
@@ -101,11 +120,11 @@ public class Endpoint {
 	public Result unfollow(Follow follow) throws NotFoundException {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser()), datastoreService);
+		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser().getEmail()), datastoreService);
 
 		if (result == null || result.getProperty("following") == null) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
 
-		HashSet<String> followers = new HashSet<>((List<String>)result.getProperty("following"));
+		HashSet<User> followers = new HashSet<>((List<User>)result.getProperty("following"));
 
 		if (!followers.remove(follow.getTarget())) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
 		result.setProperty("following", followers);
@@ -123,7 +142,8 @@ public class Endpoint {
 
 		Entity follow = getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService);
 
-		if (follow == null || follow.getProperty("following") == null) throw new NotFoundException("L'utilisateur n'existe pas ou ne follow personne.");
+		if (follow == null) throw new NotFoundException("L'utilisateur n'existe pas ou ne follow personne.");
+		if (follow.getProperty("following") == null) return CollectionResponse.<String>builder().setItems(new ArrayList<>()).setNextPageToken(null).build();
 
 		List<String> followers = (List<String>) follow.getProperty("following");
 

@@ -9,6 +9,7 @@ import com.google.api.server.spi.config.Nullable;
 import com.google.api.server.spi.response.CollectionResponse;
 import com.google.appengine.api.datastore.*;
 import entities.Post;
+import entities.User;
 
 import java.io.IOException;
 import java.util.*;
@@ -28,6 +29,8 @@ public class getNewPostsMeasure extends HttpServlet {
 
         DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
+        User bob = new User("Test", "", "");
+
         Entity follow = new Entity("Follow", "Alice");
         HashSet<String> following = new HashSet<>();
         following.add("Bob");
@@ -39,7 +42,7 @@ public class getNewPostsMeasure extends HttpServlet {
         long endTime;
         long result = 0;
 
-        createMessages("Bob", 10);
+        createMessages(bob, 10);
 
         //create the 10 firsts messages to see if we can get them in a correct time
         for (int i = 0; i < 30; i++){
@@ -54,7 +57,7 @@ public class getNewPostsMeasure extends HttpServlet {
         response.getWriter().println("On 30 tests, getting 10 news posts, the getTimeLine method perform on average " + result/30 + " ms.");
 
         result = 0;
-        createMessages("Bob", 90);
+        createMessages(bob, 90);
 
         for (int i = 0; i < 30; i++){
             //start test
@@ -68,7 +71,7 @@ public class getNewPostsMeasure extends HttpServlet {
         response.getWriter().println("On 30 tests, getting 100 news posts, the getTimeLine method perform on average " + result/30 + " ms.");
 
         result = 0;
-        createMessages("Bob", 400);
+        createMessages(bob, 400);
 
         for (int i = 0; i < 30; i++){
             //start test
@@ -121,7 +124,7 @@ public class getNewPostsMeasure extends HttpServlet {
     }
 
     //create nMessages from user
-    private void createMessages(String user, int nMessages) {
+    private void createMessages(User user, int nMessages) {
         for (int i = 0; i < nMessages; i++) {
             Post.postMessage(new Post(user,  "", ""));
         }

@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 
 public class Post {
-	private String sender;
+	private User sender;
 	private String body;
 	private String url;
 	private Key key;
@@ -20,7 +20,7 @@ public class Post {
 	public Post() {
 	}
 
-	public Post(String sender, String body, String url) {
+	public Post(User sender, String body, String url) {
 		this.sender = sender;
 		this.body = body;
 		this.url = url;
@@ -28,7 +28,7 @@ public class Post {
 		this.like = 0;
 	}
 
-	private Post(String sender, String body, String url, Key key, long like) {
+	private Post(User sender, String body, String url, Key key, long like) {
 		this.sender = sender;
 		this.body = body;
 		this.url = url;
@@ -50,7 +50,7 @@ public class Post {
 				new StringBuilder()
 						.append(Long.MAX_VALUE - (new Date()).getTime())
 						.append(":")
-						.append(post.getSender());
+						.append(post.getSender().getEmail());
 		StringBuilder postIndexKey =
 				new StringBuilder()
 						.append(postKey)
@@ -91,11 +91,11 @@ public class Post {
 		return newPost;
 	}
 
-	public String getSender() {
+	public User getSender() {
 		return sender;
 	}
 
-	public void setSender(String sender) {
+	public void setSender(User sender) {
 		this.sender = sender;
 	}
 
@@ -125,6 +125,6 @@ public class Post {
 	public static Post entityToPost(Entity i) {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 
-		return new Post((String)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey(), (long)LikeCounter.countLike(i.getKey()).getObject());
+		return new Post((User)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey(), (long)LikeCounter.countLike(i.getKey()).getObject());
 	}
 }
