@@ -233,6 +233,25 @@
                                         Modal.open(Profile.name, Profile.email, Profile.url, "Followers", "followed")
                                     }
                                 }, "Followers")
+                            ]),
+
+                            // Sign-Out
+                            m('div', {class:'navbar-end'}, [
+                                m('a', {
+                                    class: 'navbar-item button is-danger is-light is-small',
+                                    style:'margin-top:auto; margin-bottom:auto',
+                                    onclick:function() {
+                                        var auth2 = gapi.auth2.getAuthInstance();
+                                        auth2.signOut().then(
+                                            function () {
+                                                Profile.ID = "";
+                                                console.log('Déconnexion');
+                                                Profile.successNotification("Déconnexion effectuée");
+                                                m.route.set('/login');
+                                            }
+                                        )
+                                    }
+                                }, 'Déconnexion')
                             ])
                         ])
                     ])
@@ -286,13 +305,13 @@
             let items = [];
 
             // On fait la requête
-            let data = {
-                'cursorString':Profile.nextMessageToken
+            let url = "_ah/api/tinyApi/v1/collectionresponse_post/" + Profile.email;
+            if (!(Profile.nextMessageToken === "" || Profile.nextMessageToken === undefined)) {
+                url += '?cursorString=' + Profile.nextMessageToken;
             }
             let res = m.request({
                 method: "GET",
-                url: "_ah/api/tinyApi/v1/collectionresponse_post/" + Profile.email,
-                params: data
+                url: url
             })
                 .then(function(result) {
                     console.log("next:", result);
@@ -355,6 +374,18 @@
                     bool = false
                 })
             return bool;
+        },
+        infoNotification: function (message) {
+            let notification = new Notification(message, 'is-info');
+            Profile.notifications = [m(notification)];
+        },
+        successNotification: function (message) {
+            let notification = new Notification(message, 'is-success');
+            Profile.notifications = [m(notification)];
+        },
+        warningNotification: function (message) {
+            let notification = new Notification(message, 'is-warning');
+            Profile.notifications = [m(notification)];
         },
         dangerNotification: function(message) {
             let notification = new Notification(message, 'is-danger');
@@ -509,6 +540,7 @@
 
         Profile.updateUser();
 
+        Profile.successNotification("Connexion effectuée");
         m.route.set('/secret');
     }
 
@@ -533,8 +565,15 @@
                 ]),
                 m('div', {class:'hero-body'}, [
                     m('div', {class:'container has-text-centered'}, [
-                        m('h1', {class:'title', style:'width:50%; margin-left:auto; margin-right:auto'},
-                            "Pour utiliser TinyInsta il est nécessaire de se connecter avec son compte Google")
+                        m('h1', {class:'title', style:'width:50%; margin-left:auto; margin-right:auto'}, [
+                            m('p', "Pour utiliser TinyInsta il est nécessaire de se connecter avec son compte Google."),
+                            m('p', "Si le bouton de connexion n'apparait pas, veuillez recharger la page.")
+                        ])
+                    ]),
+                    // Pop-ups
+                    m('div', [
+                        // Notifications
+                        m('div', Profile.notifications)
                     ])
                 ])
             ])
