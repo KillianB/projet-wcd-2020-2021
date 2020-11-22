@@ -32,6 +32,7 @@ public class Post {
 		this.body = body;
 		this.url = url;
 		this.key = key;
+		this.like = like;
 	}
 
 	public static Entity postMessage(Post post) {
