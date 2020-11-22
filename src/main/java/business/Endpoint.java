@@ -105,7 +105,7 @@ public class Endpoint {
 
 		if (result == null || result.getProperty("following") == null) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
 
-		HashSet<String> followers = (HashSet<String>) result.getProperty("following");
+		HashSet<String> followers = new HashSet<>((List<String>)result.getProperty("following"));
 
 		if (!followers.remove(follow.getTarget())) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
 		result.setProperty("following", followers);
