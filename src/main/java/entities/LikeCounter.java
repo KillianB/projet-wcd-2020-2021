@@ -46,7 +46,7 @@ public class LikeCounter {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		boolean done = false;
 		Transaction transaction = DS.beginTransaction();
-		Entity like = DS.get(KeyFactory.createKey(key, "LikeCounter", key + ":like:" + rand.nextInt(10)));
+		Entity like = DS.get(KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:" + rand.nextInt(10)));
 		long nb = (long)like.getProperty("like");
 		like.setProperty("like", nb + 1);
 		DS.put(like);
