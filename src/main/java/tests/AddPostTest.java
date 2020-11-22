@@ -1,6 +1,5 @@
 package tests;
 
-import business.PostMessage;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -35,7 +34,7 @@ public class AddPostTest extends HttpServlet {
 		addFollowers(toFollow, followers, 1, 10, datastoreService);
 
 		long startTime = System.currentTimeMillis();
-		PostMessage.postMessage(new Post(toFollow, "Test", "Test"));
+		Post.postMessage(new Post(toFollow, "Test", "Test"));
 		long endTime = System.currentTimeMillis();
 
 		response.getWriter().println("Temps pour envoyer un message avec 10 followers : " + (endTime - startTime) + " ms");
@@ -43,7 +42,7 @@ public class AddPostTest extends HttpServlet {
 		addFollowers(toFollow, followers, 11, 100, datastoreService);
 
 		startTime = System.currentTimeMillis();
-		PostMessage.postMessage(new Post(toFollow, "Test", "Test"));
+		Post.postMessage(new Post(toFollow, "Test", "Test"));
 		endTime = System.currentTimeMillis();
 
 		response.getWriter().println("Temps pour envoyer un message avec 100 followers : " + (endTime - startTime) + " ms");
@@ -51,7 +50,7 @@ public class AddPostTest extends HttpServlet {
 		addFollowers(toFollow, followers, 101, 500, datastoreService);
 
 		startTime = System.currentTimeMillis();
-		PostMessage.postMessage(new Post(toFollow, "Test", "Test"));
+		Post.postMessage(new Post(toFollow, "Test", "Test"));
 		endTime = System.currentTimeMillis();
 
 		response.getWriter().println("Temps pour envoyer un message avec 500 followers : " + (endTime - startTime) + " ms");

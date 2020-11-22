@@ -1,4 +1,4 @@
-package business;
+package entities;
 
 import java.util.List;
 import java.util.Random;
@@ -9,7 +9,7 @@ import entities.Result;
 
 import com.google.appengine.api.datastore.Query.FilterOperator;
 
-class LikeCounter {
+public class LikeCounter {
 	private static Random rand = new Random();
 	public static Entity generateLike(String key,int i) {
 		Entity like = new Entity("LikeCounter", key + ":like:" + i, KeyFactory.createKey("Post", key));

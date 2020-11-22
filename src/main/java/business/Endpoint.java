@@ -9,12 +9,10 @@ import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import entities.Follow;
+import entities.LikeCounter;
 import entities.Post;
 import entities.Result;
-import jakarta.xml.bind.DatatypeConverter;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @Api(name = "tinyApi",
@@ -72,7 +70,7 @@ public class Endpoint {
 
 	@ApiMethod(name = "postMessage", httpMethod = HttpMethod.POST)
 	public Entity postMessage(Post post) {
-		return PostMessage.postMessage(post);
+		return Post.postMessage(post);
 	}
 
 	@ApiMethod(name = "follow", httpMethod = HttpMethod.POST)
