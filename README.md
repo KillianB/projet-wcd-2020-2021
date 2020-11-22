@@ -6,8 +6,6 @@ Cloud et son App Engine dans le cadre du cours Web & Cloud and Datastores.
 
 ## Fonctionnalités implémentées
 
-TODO: Choix d'implémentation
-
  - Login avec Google (OAuth)
  - Page de profil avec ses posts
  - Ajouter un nouveau post
@@ -18,6 +16,14 @@ TODO: Choix d'implémentation
  - Lister ses follows
  - Listes ses followers
  - Afficher sa timeline
+ 
+Le principal choix d'implémentation qui a été réalisé a été sur les followers. En effet, il n'existe qu'un Kind "Follow",
+dont la clé est la personne qui follow et qui a une liste des following. Cette liste peut contenir que 20000 éléments par
+la limite du Datastore et nous avons choisi de ne pas créer de FollowIndex.
+L'autre choix a été fait sur les likes. Actuellement, il est possible qu'un utilisateur puisse like plusieurs fois un post.
+Cela est dû au fait qu'il n'existe pas de kind "Like" qui permettrait de palier à ce problème.
+Enfin, il n'est pas possible d'upload une image directement sur notre application mais uniquement fournir un lien vers cette
+image pour qu'il soit stocké dans le Datastore.
 
 ## URLs
 
