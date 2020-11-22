@@ -72,58 +72,7 @@ public class Endpoint {
 
 	@ApiMethod(name = "postMessage", httpMethod = HttpMethod.POST)
 	public Entity postMessage(Post post) {
-		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
-		MessageDigest messageDigest = null;
-
-		try {
-			messageDigest = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		}
-
-		StringBuilder postKey =
-				new StringBuilder()
-						.append(Long.MAX_VALUE - (new Date()).getTime())
-						.append(":")
-						.append(post.getSender());
-		StringBuilder postIndexKey =
-				new StringBuilder()
-						.append(postKey)
-						.append(":")
-						.append(DatatypeConverter.printHexBinary(messageDigest.digest((new Date()).toString().getBytes())).toUpperCase());
-
-		Entity newPost = new Entity("Post", postKey.toString());
-		Entity newPostIndex = new Entity("PostIndex", postIndexKey.toString(), newPost.getKey());
-
-		newPost.setProperty("sender", post.getSender());
-		newPost.setProperty("body", post.getBody());
-		newPost.setProperty("url", post.getUrl());
-
-		Query query = new Query("Follow")
-				.setFilter(new Query.FilterPredicate("following", Query.FilterOperator.EQUAL, post.getSender()));
-
-		PreparedQuery preparedQuery = datastoreService.prepare(query);
-		List<Entity> result = preparedQuery.asList(FetchOptions.Builder.withDefaults());
-
-		List<String> keys = new ArrayList<>();
-		result.forEach(entity -> keys.add(entity.getKey().getName()));
-
-		HashSet<String> followers = new HashSet<>(keys);
-
-		newPostIndex.setProperty("receivers", followers);
-
-		Transaction transaction = datastoreService.beginTransaction(TransactionOptions.Builder.withXG(true));
-
-		datastoreService.put(newPost);
-		datastoreService.put(newPostIndex);
-
-		for (int i = 0; i < 10; i++) {
-			datastoreService.put(LikeCounter.generateLike(postKey.toString(), i));
-		}
-
-		transaction.commit();
-
-		return newPost;
+		return PostMessage.postMessage(post);
 	}
 
 	@ApiMethod(name = "follow", httpMethod = HttpMethod.POST)
@@ -169,14 +118,30 @@ public class Endpoint {
 	}
 
 	@ApiMethod(name = "followers.list", httpMethod = HttpMethod.GET)
-	public Result followersList(@Named("user") String user) throws NotFoundException {
+	public CollectionResponse<String> followersList(@Named("user") String user, @Nullable @Named("next") String cursorString) throws NotFoundException {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		Entity follow = getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService);
 
 		if (follow == null || follow.getProperty("following") == null) throw new NotFoundException("L'utilisateur n'existe pas ou ne follow personne.");
 
-		return new Result(200, follow.getProperty("following"));
+		List<String> followers = (List<String>) follow.getProperty("following");
+
+		int currentCursor = 0;
+		int nextCursor = 0;
+
+		if (cursorString != null) currentCursor = Integer.parseInt(cursorString);
+
+		nextCursor = currentCursor + 10;
+
+		if (nextCursor >= followers.size()) {
+			nextCursor = followers.size();
+			followers = followers.subList(currentCursor, nextCursor);
+		}
+		else followers = followers.subList(currentCursor, nextCursor);
+
+		String toSend = nextCursor == followers.size() ? null : String.valueOf(nextCursor);
+		return CollectionResponse.<String>builder().setItems(followers).setNextPageToken(toSend).build();
 	}
 
 	@ApiMethod(name = "followed.list", httpMethod = HttpMethod.GET)
