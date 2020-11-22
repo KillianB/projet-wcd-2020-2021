@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html id="PAGE" lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>TinyInsta</title>
@@ -22,6 +22,104 @@
 <body>
 <script>
 
+    // TODO: Follow + Unfollow
+    class User {
+        constructor(user) {
+            this.name = user.name
+            this.url = user.url
+        }
+
+        view() {
+            return m('div', {class:'container block box'}, [
+                m('article', {class:'media'}, [
+                    m('div', {class:'media-left'}, [
+                        m('figure', {class:'image is-32x32'}, [
+                            m('img', {src:this.url})
+                        ])
+                    ]),
+                    m('div', {class:'media-content'}, [
+                        m('div', {class:'content'}, [
+                            m('p', {class:'is-size-4 is-centered', style:'margin-top: auto; margin-bottom:auto'}, this.name)
+                        ])
+                    ]),
+                    m('div', {class:'media-right'}, [
+                        m('button', {class:'button is-info', onclick:''}, 'Follow')
+                    ])
+                ])
+            ])
+        }
+    }
+
+    // Done
+    class Notification {
+        constructor(message, type) {
+            this.message = message;
+            this.type = type;
+        }
+
+        view() {
+            return m('div', {class:"notification is-light" + this.type, style:'position:fixed; right: 10px; bottom: 10px' }, [
+                m('button', {
+                    class:'delete',
+                    onclick: function() {
+                        Profile.notifications = []
+                    }
+                }),
+                m('p', {class:'text'}, this.message)
+            ]);
+        }
+    }
+
+    // TODO: Like + Modal
+    class Message {
+        constructor(key, sender, urlProfil, urlImage, content, nbLike) {
+            this.key = key;
+            this.name = sender;
+            this.urlProfil = urlProfil;
+            this.urlImage = urlImage;
+            this.content = content;
+            this.nbLike = nbLike;
+        }
+
+        view() {
+            return m('div', {class:'container box block'}, [
+                m('article', {class:'media'}, [
+                    m('figure', {class:'media-left'}, [
+                        m('img', {src:this.urlProfil, class:'image is-64x64', style:'border-radius:50%'})
+                    ]),
+                    m('div', {class:'media-content'}, [
+                        m('div', {class:'field'}, [
+                            m('p', {class:'control'}, [
+                                m('a', {onclick:''}, [
+                                    m('strong', this.name)
+                                ]),
+                                m('br'),
+                                m('p', this.content)
+                            ])
+                        ]),
+                        m('div', {class:'field'}, [
+                            m('img', {src:this.urlImage, class:'image'})
+                        ]),
+                        m('nav', {class:'level'}, [
+                            m('div', {class:'level-left'}, [
+                                m('p', {style:'margin-top:auto; margin-bottom:auto; margin-right:5px; font-size:15px'}, this.nbLike),
+                                m('a', {class:'level-item', onclick:this.like, style:'margin-top:auto; margin-bottom:auto'}, [
+                                    m('span', {class:'icon is-small'}, [
+                                        m('i', {class:'fas fa-heart'})
+                                    ])
+                                ])
+                            ])
+                        ])
+                    ])
+                ])
+            ])
+        }
+
+        like() {
+        }
+    }
+
+    // TODO: Like + Follow + Unfollow
     let Profile={
 
         // Attributs
@@ -29,28 +127,62 @@
         email:"",
         ID:"",
         url:"",
-        nextToken:"",
-        list:[],
+        // Used for the Timeline
+        nextMessageToken:"",
+        // Container of notification
+        notifications: [],
 
         // Fonctions
         view: function(){
-            return m('secion', {class:'hero is-light is-fullheight'}, [
+            return m('secion', {class:'hero is-light is-fullheight',  id:"PAGE"}, [
+                // Page body
                 m('div', {class:'hero-body'}, [
                     m('div', {class:'container', style:'top:20px'}, [
                         m(TimeLine)
                     ])
                 ]),
+                // Pop-ups
+                m('div', [
+                    // Notifications
+                    m('div', Profile.notifications),
+                    m(Modal)
+                ]),
+                // Header
                 m('div', {class:'hero-head has-background-light', style:'position:fixed; width:100%'}, [
                     m('header', {class:'navbar'}, [
                         m('div', {class:'container'}, [
                             m('div', {class:'navbar-brand'}, [
+
+                                // Title
                                 m('h1', {class:'navbar-item title', style:'margin-top:auto; margin-bottom:auto'}, "TinyInsta"),
-                                m("img", {
+
+                                // Profil image
+                                m('img', {
                                     src:Profile.url,
                                     class:'navbar-item image is-64x64',
                                     style:'border-radius:50%; margin-top:auto; margin-bottom:auto'
                                 }),
-                                m("h1", {class: 'navbar-item title', style:'margin-top:auto; margin-bottom:auto'}, Profile.name)
+
+                                // Profil name
+                                m('h1', {class: 'navbar-item title', style:'margin-top:auto; margin-bottom:auto'}, Profile.name),
+
+                                // Follows
+                                m('a', {
+                                    class: 'navbar-item subtitle',
+                                    style:'margin-top:auto; margin-bottom:auto',
+                                    onclick:function () {
+                                        Modal.open(Profile.name, Profile.url, "Follows", "followers")
+                                    }
+                                }, "Follows"),
+
+                                // Followers
+                                m('a', {
+                                    class: 'navbar-item subtitle',
+                                    style:'margin-top:auto; margin-bottom:auto',
+                                    onclick:function () {
+                                        Modal.open(Profile.name, Profile.url, "Followers", "followed")
+                                    }
+                                }, "Followers")
                             ])
                         ])
                     ])
@@ -58,56 +190,83 @@
             ])
         },
         postMessage: function(content, image) {
-            let data={
-                'url': image,
-                'body': content,
-                'sender': Profile.ID
+            // On montre à l'utilisateur que l'on envoi le message
+            PostMessageButton.loading();
+
+            let res = undefined;
+            if (PostMessage.content === "" && PostMessage.image === "") {
+                Profile.dangerNotification("Au moins un champ doit contenir quelque chose !");
             }
-            return m.request({
-                method: "POST",
-                url: "_ah/api/tinyApi/v1/postMessage"+'?access_token='+encodeURIComponent(Profile.ID),
-                params: data
-            })
-                .then(function(result) {
-                    console.log("post_message: ",result);
+            else {
+                // On fait la requête
+                let data = {
+                    url: image,
+                    body: content,
+                    sender: Profile.name
+                }
+                res = m.request({
+                    method: "POST",
+                    url: "_ah/api/tinyApi/v1/postMessage"+'?access_token='+encodeURIComponent(Profile.ID),
+                    params: data
                 })
-        },
-        loadList: function() {
-            return m.request({
-                method: "GET",
-                url: "_ah/api/tinyApi/v1/collectionresponse_entity"+'?access_token=' + encodeURIComponent(Profile.ID)
-            })
-                .then(function(result) {
-                    console.log("load_list:",result)
-                    Profile.list=result.items
-                    if ('nextPageToken' in result) {
-                        Profile.nextToken= result.nextPageToken
-                    } else {
-                        Profile.nextToken=""
-                    }})
+                    .then(function(result) {
+                        console.log("post_message: ", result);
+
+                        // On vide le contenu de la fenêtre pour confirmer à l'utilisateur que l'envoi a bien été effectué
+                        PostMessage.content = "";
+                        document.getElementById("PostContent").value = "";
+                        PostMessage.image = "";
+                        document.getElementById("PostImage").value = "";
+                    })
+
+                if (!(PostMessage.content === "")) {
+                    Profile.dangerNotification("Une erreur s'est produite lors de l'envois");
+                }
+            }
+
+            // On termine l'envoi du messages
+            PostMessageButton.unloading();
+
+            return res;
         },
         next: function() {
-            return m.request({
+            // On montre à l'utilisateur que l'on charge les nouveaux messages
+            TimeLineButton.loading();
+
+            let items = [];
+
+            // On fait la requête
+            let res = m.request({
                 method: "GET",
-                url: "_ah/api/myApi/v1/collectionresponse_entity",
+                url: "_ah/api/tinyApi/v1/collectionresponse_post/" + Profile.name,
                 params: {
-                    'next':Profile.nextToken,
+                    'cursorString':Profile.nextMessageToken,
                     'access_token': encodeURIComponent(Profile.ID)
                 }
             })
                 .then(function(result) {
-                    console.log("next:",result)
-                    result.items.map(function(item){Profile.list.push(item)})
-                    if ('nextPageToken' in result) {
-                        Profile.nextToken= result.nextPageToken
-                    } else {
-                        Profile.nextToken=""
-                    }})
+                    console.log("next:", result);
+
+                    items = result.items;
+                    TimeLine.updateMessage(items);
+                    if ('nextPageToken' in result) { Profile.nextMessageToken= result.nextPageToken }
+                    else { Profile.nextMessageToken="" }
+                })
+
+            if (items === []) {
+                Profile.dangerNotification("Une erreur s'est produite lors de la réception");
+            }
+
+            // On termine la mise en chargement des messages
+            TimeLineButton.unloading();
+
+            // On retourne le résultat de la requête
+            return res;
         },
-        follow: function(user) {
+        follow: function(target) {
             let data = {
-                "user": Profile.ID,
-                "target": user
+                user: Profile.name,
+                target: target
             }
             return m.request({
                 method: "POST",
@@ -115,11 +274,138 @@
                 params: data
             })
                 .then(function(result) {
-                    console.log("follow: ",result);
+                    console.log("follow: ", result);
                 })
+        },
+        like: function(message) {
+            let data = {
+                keyString:message.key
+            }
+            return m.request({
+                method: "POST",
+                url: "_ah/api/tinyApi/v1/follow"+'?access_token='+encodeURIComponent(Profile.ID),
+                params: data
+            })
+                .then(function(result) {
+                    console.log("like: ", result);
+                })
+        },
+        dangerNotification: function(message) {
+            let notification = new Notification(message, 'is-danger');
+            Profile.notifications = [m(notification)];
         }
     }
 
+    // TODO: Follow + Unfollow + Fix la requête dans loadFollows une fois l'api rectifiée
+    let Modal = {
+        name: "",
+        url: "",
+        title: "",
+        follows:[ // Valeurs exemples. Initialisé vide quand tout sera fonctionnel
+            m(new User({name:"Killian BARREAU", url:""})),
+            m(new User({name:"Alexandre DESMONTILS", url:""})),
+            m(new User({name:"Un deux plus", url:""})),
+            m(new User({name:"Deux de plus", url:""})),
+            m(new User({name:"Killian BARREAU", url:""})),
+            m(new User({name:"Alexandre DESMONTILS", url:""})),
+            m(new User({name:"Un deux plus", url:""})),
+            m(new User({name:"Deux de plus", url:""})),
+            m(new User({name:"Killian BARREAU", url:""})),
+            m(new User({name:"Alexandre DESMONTILS", url:""})),
+            m(new User({name:"Un deux plus", url:""})),
+            m(new User({name:"Deux de plus", url:""}))
+        ],
+        nextTokenFollows:"",
+        view: function() {
+            return m('div', {class:'modal', id:'Modal'}, [
+                // Shadow background
+                m('div', {class:'modal-background', onclick: Modal.exit}),
+
+                // Card
+                m('div', {class:'modal-card'}, [
+
+                    // Header
+                    m('header', {class:'modal-card-head'}, [
+                        m('div', {class:'modal-card-title'}, [
+                            m('nav', {class:'level'}, [
+                                m('div', {class:'level-left'}, [
+                                    m('img', {
+                                        src:Modal.url,
+                                        class:'level-item image is-64x64',
+                                        style:'border-radius: 50%; margin-top: auto; margin-bottom: auto'
+                                    }),
+                                    m('p', {
+                                        class:'level-item',
+                                        style:'margin-top: auto; margin-bottom: auto'
+                                    }, Modal.name + " - " + Modal.title),
+                                ])
+                            ])
+                        ]),
+                        m('button', {class:'delete is-large', 'aria-label':'close', onclick: Modal.exit})
+                    ]),
+
+                    // Body
+                    m('section', {class:'modal-card-body has-background-grey-light'}, Modal.follows),
+
+                    // Footer
+                    m('footer', {class:'modal-card-foot'}, [
+                        m('button', {class:'button is-info', onclick:''}, 'Afficher plus')
+                    ])
+                ])
+            ])
+        },
+        exit: function() {
+            document.getElementById('Modal').classList.remove('is-active')
+            document.getElementById('PAGE').classList.remove('is-clipped')
+        },
+        open: function(nameUser, urlProfil, title, request) {
+            Modal.name = nameUser;
+            Modal.url = urlProfil;
+            Modal.title = title;
+            /*
+            Modal.follows = [];
+            Modal.nextTokenFollows = "";
+             */
+
+            document.getElementById('Modal').classList.add('is-active')
+            document.getElementById('PAGE').classList.add('is-clipped')
+
+            if (request === "followers" || request === "followed") {
+                // Modal.loadFollows(request)
+            }
+        },
+        loadFollows: function(version) {
+            let data = {
+                user:Modal.name,
+                next:Modal.nextTokenFollows
+            }
+            let res = m.request({
+                method: "GET",
+                url: "_ah/api/tinyApi/v1/" + version + 'List/' + Modal.name + '?access_token='+encodeURIComponent(Profile.ID),
+                params: data
+            })
+                .then(function(result) {
+                    console.log(version + ": " + result)
+                    console.log('items: ' + result.items);
+
+                    if (result.items.length === 0) {
+                        Profile.dangerNotification("Tout est déjà affiché")
+                    }
+                    else {
+                        result.items.forEach(function(item) {
+                            let user = new User(item)
+                            console.log(item.name);
+                            Modal.follows.push(m(user))
+                        })
+                    }
+                    Modal.nextTokenFollows = result.nextPageToken
+                })
+
+            return res;
+        }
+    }
+
+    // Done
     function onSignIn(googleUser) {
         let profile = googleUser.getBasicProfile();
 
@@ -131,6 +417,7 @@
         m.route.set('/secret');
     }
 
+    // Done
     let Login = {
         view: function() {
             return m('secion', {class:'hero is-light is-fullheight'}, [
@@ -159,6 +446,26 @@
         }
     }
 
+    // Done
+    let PostMessageButton = {
+        view: function () {
+            return m('nav', {class:'level'}, [
+                m('div', {class:'level-left'}, [
+                    m('div', {class:'level-item'}, [
+                        m('a', {id:'PostMessageButton', class:'button is-info is-light', onclick:PostMessage.postMessage}, 'Envoyer')
+                    ])
+                ])
+            ])
+        },
+        loading: function () {
+            document.getElementById('PostMessageButton').classList.add('is-loading');
+        },
+        unloading: function () {
+            document.getElementById('PostMessageButton').classList.remove('is-loading');
+        }
+    }
+
+    // Done
     let PostMessage = {
         content:"",
         image:"",
@@ -170,6 +477,7 @@
                             m('div', {class:'field'}, [
                                 m('p', {class:'control'}, [
                                     m('textarea', {
+                                        id:"PostContent",
                                         class:'textarea',
                                         placeholder:'Écrire un message',
                                         oninput: PostMessage.updateContent,
@@ -180,6 +488,7 @@
                             m('div', {class:'field'}, [
                                 m('p', {class:'control'}, [
                                     m('input', {
+                                        id:"PostImage",
                                         class:'input',
                                         type:'text',
                                         placeholder:'URL image',
@@ -187,13 +496,7 @@
                                         value: PostMessage.image})
                                 ])
                             ]),
-                            m('nav', {class:'level'}, [
-                                m('div', {class:'level-left'}, [
-                                    m('div', {class:'level-item'}, [
-                                        m('a', {onclick:PostMessage.postMessage ,class:'button is-info is-light'}, 'Envoyer')
-                                    ])
-                                ])
-                            ])
+                            m(PostMessageButton)
                         ])
                     ])
                 ])
@@ -210,77 +513,40 @@
         }
     }
 
-    class Message {
-        constructor(nameSender, imageSender, imageMessage, content, nbLike) {
-            this.nameSender = nameSender;
-            this.imageSender = imageSender;
-            this.imageMessage = imageMessage;
-            this.content = content;
-            this.nbLike = nbLike;
-        }
-
-        view() {
-            return m('div', {class:'container box block'}, [
-                m('article', {class:'media'}, [
-                    m('figure', {class:'media-left'}, [
-                        m('img', {src:this.imageSender, class:'image is-64x64', style:'border-radius:50%'})
-                    ]),
-                    m('div', {class:'media-content'}, [
-                        m('div', {class:'field'}, [
-                            m('p', {class:'control'}, [
-                                m('strong', this.nameSender),
-                                m('br'),
-                                m('p', this.content)
-                            ])
-                        ]),
-                        m('div', {class:'field'}, [
-                            m('img', {src:this.imageMessage, class:'image'})
-                        ]),
-                        m('nav', {class:'level'}, [
-                            m('div', {class:'level-left'}, [
-                                m('p', {style:'margin-top:auto; margin-bottom:auto; margin-right:5px; font-size:15px'}, this.nbLike),
-                                m('a', {class:'level-item', onclick:this.like, style:'margin-top:auto; margin-bottom:auto'}, [
-                                    m('span', {class:'icon is-small'}, [
-                                        m('i', {class:'fas fa-heart'})
-                                    ])
-                                ])
-                            ])
-                        ])
-                    ]),
-                    m('div', {class:'media-right'}, [
-                        m('button', {class:'button is-info is-light is-small', onclick:this.follow}, "Follow")
-                    ])
-                ])
-            ])
-        }
-
-        follow() {
-            console.log(Profile.follow(Profile.ID));
-        }
-
-        like() {
-            console.log("Un like s'est ajouté");
-        }
-    }
-
-    const image = 'https://lh3.googleusercontent.com/a-/AOh14Gi4nloDhM3cflgm1AbQH4fE6dDLLgZlm-GjBjy1=s96-c';
-    let message = new Message("Nom du sender", image, image, "Contenu du message", 10);
-
-    let TimeLine = {
-        listItems:[
-            m(PostMessage),
-            m(message),
-            m(message),
-            m(message),
-            m(message),
-            m(message),
-            m('button', {class:'button is-info is-outlined', onclick:Profile.next}, "Afficher plus de messages")
-        ],
+    // Done
+    let TimeLineButton = {
         view: function() {
-            return m('div', TimeLine.listItems)
+            return m('div', {class:'block'},
+                m('button', {id:'TimeLineButton', class:'button is-info is-outlined', onclick:Profile.next}, "Afficher plus de messages")
+            )
+        },
+        loading: function() {
+            document.getElementById('TimeLineButton').classList.add('is-loading');
+        },
+        unloading: function () {
+            document.getElementById('TimeLineButton').classList.remove('is-loading');
         }
     }
 
+    // Done
+    let TimeLine = {
+        buttonClass: "button is-info is-outlined",
+        listItems:[m(PostMessage)],
+        view: function() {
+            return m('div', [
+                m('div', {class:'block'}, TimeLine.listItems),
+                m(TimeLineButton)
+            ])
+        },
+        updateMessage: function(items) {
+            for (let i in items) {
+                console.log(items[i]);
+                TimeLine.listItems.push(m(new Message("key", items[i].sender, "", items[i].url, items[i].body, 42)));
+            }
+        }
+    }
+
+    // Done
     m.route(document.body, "/secret", {
         "/secret": { onmatch: function() {
                 if (Profile.ID==="") {m.route.set("/login")}
