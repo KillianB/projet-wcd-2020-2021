@@ -112,6 +112,9 @@ public class Post {
 		this.url = url;
 	}
 
+	public Key getKey() {
+		return this.key;
+	}
 	public static Post entityToPost(Entity i) {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 
