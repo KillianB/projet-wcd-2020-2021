@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @WebServlet(
 		name = "TestPost",
@@ -28,32 +29,51 @@ public class AddPostTest extends HttpServlet {
 
 		String toFollow = "ToFollowTest";
 		String followers = "TestUser";
+		long startTime = 0;
+		long endTime = 0;
+		long totalTime = 0;
 
 		addFollowers(toFollow, followers, 1, 10, datastoreService);
 
-		long startTime = System.currentTimeMillis();
-		Post.postMessage(new Post(toFollow, "Test", "Test"));
-		long endTime = System.currentTimeMillis();
+		for (int i = 0; i < 30; i++) {
+			startTime = System.currentTimeMillis();
+			Post.postMessage(new Post(toFollow, "Test", "Test"));
+			endTime = System.currentTimeMillis();
+			totalTime += endTime - startTime;
+		}
 
-		response.getWriter().println("Temps pour envoyer un message avec 10 followers : " + (endTime - startTime) + " ms");
+		response.getWriter().println("Temps pour envoyer un message avec 10 followers : " + totalTime/30 + " ms");
 
 		addFollowers(toFollow, followers, 11, 100, datastoreService);
 
-		startTime = System.currentTimeMillis();
-		Post.postMessage(new Post(toFollow, "Test", "Test"));
-		endTime = System.currentTimeMillis();
+		totalTime = 0;
+		for (int i = 0; i < 30; i++) {
+			startTime = System.currentTimeMillis();
+			Post.postMessage(new Post(toFollow, "Test", "Test"));
+			endTime = System.currentTimeMillis();
+			totalTime += endTime - startTime;
+		}
 
-		response.getWriter().println("Temps pour envoyer un message avec 100 followers : " + (endTime - startTime) + " ms");
+		response.getWriter().println("Temps pour envoyer un message avec 100 followers : " + totalTime/30 + " ms");
 
 		addFollowers(toFollow, followers, 101, 500, datastoreService);
 
-		startTime = System.currentTimeMillis();
-		Post.postMessage(new Post(toFollow, "Test", "Test"));
-		endTime = System.currentTimeMillis();
+		totalTime = 0;
+		for (int i = 0; i < 30; i++) {
+			startTime = System.currentTimeMillis();
+			Post.postMessage(new Post(toFollow, "Test", "Test"));
+			endTime = System.currentTimeMillis();
+			totalTime += endTime - startTime;
+		}
 
-		response.getWriter().println("Temps pour envoyer un message avec 500 followers : " + (endTime - startTime) + " ms");
+		response.getWriter().println("Temps pour envoyer un message avec 500 followers : " + totalTime/30 + " ms");
 
-		removeAllEntities();
+		try {
+			TimeUnit.SECONDS.sleep(1);
+			removeAllEntities();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void addFollowers(String toFollow, String followersName, int start, int end, DatastoreService datastoreService) {
@@ -93,6 +113,7 @@ public class AddPostTest extends HttpServlet {
 		for (int i = 1; i <= 500; i++) {
 			followKeys.add(KeyFactory.createKey("Follow", "TestUser" + i));
 		}
+
 		datastoreService.delete(followKeys);
 
 		List<Key> likeCountersKey = new ArrayList<>();
