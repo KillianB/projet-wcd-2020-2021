@@ -125,6 +125,6 @@ public class Post {
 	public static Post entityToPost(Entity i) {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 
-		return new Post((String)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey(), (long)LikeCounter.countLike(i.getKey().toString()).getObject());
+		return new Post((String)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey(), (long)LikeCounter.countLike(i.getKey()).getObject());
 	}
 }

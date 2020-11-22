@@ -60,12 +60,12 @@ public class Endpoint {
 
 	@ApiMethod(name = "like", httpMethod = HttpMethod.POST)
 	public Result like(@Named("keyString") String key) throws EntityNotFoundException {
-		return LikeCounter.like(key.replace("%3A", ":"));
+		return LikeCounter.like(KeyFactory.createKey("Post", key.replace("%3A", ":")));
 	}
 
 	@ApiMethod(name = "getCountLike", httpMethod = HttpMethod.GET)
-	public Result getCountLike(@Named("keyString") String key) {
-		return LikeCounter.countLike(key.replace("%3A", ":"));
+	public Result getCountLike(Key key) {
+		return LikeCounter.countLike(key);
 	}
 
 	@ApiMethod(name = "postMessage", httpMethod = HttpMethod.POST)
