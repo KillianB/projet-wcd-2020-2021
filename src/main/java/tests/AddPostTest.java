@@ -82,7 +82,7 @@ public class AddPostTest extends HttpServlet {
 		HashSet<String> following = null;
 
 		for (int i = start; i <= end; i++) {
-			follow = new Entity("Follow", followersName + i);
+			follow = new Entity("Follow", followersName + ":follow" + i);
 			following = new HashSet<>();
 			following.add(toFollow.getEmail());
 			follow.setProperty("following", following);
@@ -112,7 +112,7 @@ public class AddPostTest extends HttpServlet {
 
 		List<Key> followKeys = new ArrayList<>();
 		for (int i = 1; i <= 500; i++) {
-			followKeys.add(KeyFactory.createKey("Follow", "TestUser" + i));
+			followKeys.add(KeyFactory.createKey("Follow", "TestUser:follow" + i));
 		}
 
 		datastoreService.delete(followKeys);

@@ -1,5 +1,7 @@
 package entities;
 
+import com.google.appengine.api.datastore.Entity;
+
 public class User {
 	private String email;
 	private String name;
@@ -36,5 +38,9 @@ public class User {
 
 	public void setUrlAvatar(String urlAvatar) {
 		this.urlAvatar = urlAvatar;
+	}
+
+	public static User entityToUser(Entity entity) {
+		return new User((String) entity.getProperty("email"), (String) entity.getProperty("name"), (String) entity.getProperty("urlAvatar"));
 	}
 }

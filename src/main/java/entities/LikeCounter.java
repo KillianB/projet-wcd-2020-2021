@@ -1,18 +1,13 @@
 package entities;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 import com.google.appengine.api.datastore.*;
 
-import entities.Result;
-
-import com.google.appengine.api.datastore.Query.FilterOperator;
+import java.util.Random;
 
 public class LikeCounter {
 	private static Random rand = new Random();
-	public static Entity generateLike(String key,int i) {
+
+	public static Entity generateLike(String key, int i) {
 		Entity like = new Entity("LikeCounter", key + ":like:" + i, KeyFactory.createKey("Post", key));
 		like.setProperty("like", 0);
 		like.setProperty("message", key);
@@ -32,7 +27,7 @@ public class LikeCounter {
 		long counter = 0;
 		for (int i = 0; i < 10; i++) {
 			try {
-				oneCounter = DS.get(KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:"+i));
+				oneCounter = DS.get(KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:" + i));
 				counter += (long) oneCounter.getProperty("like");
 			} catch (EntityNotFoundException e) {
 				e.printStackTrace();
@@ -47,13 +42,13 @@ public class LikeCounter {
 		boolean done = false;
 		Transaction transaction = DS.beginTransaction();
 		Entity like = DS.get(KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:" + rand.nextInt(10)));
-		long nb = (long)like.getProperty("like");
+		long nb = (long) like.getProperty("like");
 		like.setProperty("like", nb + 1);
 		DS.put(like);
 		done = true;
 		transaction.commit();
 		if (done) {
-			return new Result(200,"OK");
+			return new Result(200, "OK");
 		} else {
 			return new Result(500, "like non comptabilisé");
 		}

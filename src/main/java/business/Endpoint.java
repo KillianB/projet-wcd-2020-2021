@@ -25,7 +25,8 @@ import java.util.*;
 
 public class Endpoint {
 	@ApiMethod(name = "timeline", httpMethod = HttpMethod.GET)
-	public CollectionResponse<Post> getTimeline(@Named("user") String user, @Nullable @Named("cursorString") String cursorString) {
+	public CollectionResponse<Post> getTimeline(@Named("user") String user, @Nullable @Named("cursorString") String cursorString)
+		throws EntityNotFoundException {
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		//recup postIndex
 		Query query = new Query("PostIndex")
@@ -50,7 +51,9 @@ public class Endpoint {
 		cursorString = postsI.getCursor().toWebSafeString();
 
 		List<Post> posts = new ArrayList<>();
-		msgs.values().forEach(entity -> posts.add(Post.entityToPost(entity)));
+		for (Entity entity : msgs.values()) {
+			posts.add(Post.fetchUserAndFormat(entity));
+		}
 
 	    return CollectionResponse.<Post>builder().setItems(posts).setNextPageToken(cursorString).build();
 	}
@@ -96,17 +99,17 @@ public class Endpoint {
 	public Result follow(Follow follow) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser().getEmail()), datastoreService);
-		HashSet<User> followers = null;
+		Entity result = getKindByKey("Follow", KeyFactory.createKey(KeyFactory.createKey("User", follow.getUser().getEmail()), "Follow", follow.getUser().getEmail() + ":follow"), datastoreService);
+		HashSet<String> followers = null;
 
-		if (result == null) result = new Entity("Follow", follow.getUser().getEmail());
+		if (result == null) result = new Entity("Follow", follow.getUser().getEmail(), KeyFactory.createKey("User", follow.getUser().getEmail()));
 
 		if (result.getProperty("following") == null) followers = new HashSet<>();
-		else followers = new HashSet<>((ArrayList<User>) result.getProperty("following"));
+		else followers = new HashSet<>((ArrayList<String>) result.getProperty("following"));
 
 		if (followers.size() + 1 > 20000) throw new ArrayStoreException("On ne peut pas follow plus de 20000 personnes.");
 
-		followers.add(follow.getTarget());
+		followers.add(follow.getTarget().getEmail());
 		result.setProperty("following", followers);
 
 		Transaction transaction = datastoreService.beginTransaction();
@@ -120,13 +123,13 @@ public class Endpoint {
 	public Result unfollow(Follow follow) throws NotFoundException {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser().getEmail()), datastoreService);
+		Entity result = getKindByKey("Follow", KeyFactory.createKey(KeyFactory.createKey("User", follow.getUser().getEmail()), "Follow", follow.getUser().getEmail() + ":follow"), datastoreService);
 
 		if (result == null || result.getProperty("following") == null) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
 
-		HashSet<User> followers = new HashSet<>((List<User>)result.getProperty("following"));
+		HashSet<String> followers = new HashSet<>((List<String>) result.getProperty("following"));
 
-		if (!followers.remove(follow.getTarget())) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
+		if (!followers.remove(follow.getTarget().getEmail())) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
 		result.setProperty("following", followers);
 
 		Transaction transaction = datastoreService.beginTransaction();
@@ -136,14 +139,14 @@ public class Endpoint {
 		return new Result(200, "OK");
 	}
 
-	@ApiMethod(name = "followers.list", httpMethod = HttpMethod.GET)
-	public CollectionResponse<String> followersList(@Named("user") String user, @Nullable @Named("next") String cursorString) throws NotFoundException {
+	@ApiMethod(name = "followed.list", httpMethod = HttpMethod.GET)
+	public CollectionResponse<User> followedList(@Named("user") String user, @Nullable @Named("next") String cursorString) throws NotFoundException, EntityNotFoundException {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		Entity follow = getKindByKey("Follow", KeyFactory.createKey("Follow", user), datastoreService);
+		Entity follow = getKindByKey("Follow", KeyFactory.createKey(KeyFactory.createKey("User", user), "Follow", user + ":follow"), datastoreService);
 
 		if (follow == null) throw new NotFoundException("L'utilisateur n'existe pas ou ne follow personne.");
-		if (follow.getProperty("following") == null) return CollectionResponse.<String>builder().setItems(new ArrayList<>()).setNextPageToken(null).build();
+		if (follow.getProperty("following") == null) return CollectionResponse.<User>builder().setItems(new ArrayList<>()).setNextPageToken(null).build();
 
 		List<String> followers = (List<String>) follow.getProperty("following");
 
@@ -160,12 +163,18 @@ public class Endpoint {
 		}
 		else followers = followers.subList(currentCursor, nextCursor);
 
+		List<User> users = new ArrayList<>();
+		for (String follower : followers) {
+			Entity u = datastoreService.get(KeyFactory.createKey("User", follower));
+			users.add(User.entityToUser(u));
+		}
+
 		String toSend = nextCursor == followers.size() ? null : String.valueOf(nextCursor);
-		return CollectionResponse.<String>builder().setItems(followers).setNextPageToken(toSend).build();
+		return CollectionResponse.<User>builder().setItems(users).setNextPageToken(toSend).build();
 	}
 
-	@ApiMethod(name = "followed.list", httpMethod = HttpMethod.GET)
-	public CollectionResponse<Entity> followedList(@Named("user") String user, @Nullable @Named("next") String cursorString) {
+	@ApiMethod(name = "followers.list", httpMethod = HttpMethod.GET)
+	public CollectionResponse<User> followersList(@Named("user") String user, @Nullable @Named("next") String cursorString) throws EntityNotFoundException {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		Query query = new Query("Follow")
@@ -178,9 +187,19 @@ public class Endpoint {
 		if (cursorString != null) fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
 
 		QueryResultList<Entity> resultList = preparedQuery.asQueryResultList(fetchOptions);
+
+		ArrayList<Key> userKeys = new ArrayList<>();
+		resultList.forEach(entity -> userKeys.add(entity.getParent()));
+
+		ArrayList<User> users = new ArrayList<>();
+		for (Key userKey : userKeys) {
+			Entity u = datastoreService.get(userKey);
+			users.add(User.entityToUser(u));
+		}
+
 		cursorString = resultList.getCursor().toWebSafeString();
 
-		return CollectionResponse.<Entity>builder().setItems(resultList).setNextPageToken(cursorString).build();
+		return CollectionResponse.<User>builder().setItems(users).setNextPageToken(cursorString).build();
 	}
 
 	private Entity getKindByKey(String kind, Key key, DatastoreService datastoreService) {

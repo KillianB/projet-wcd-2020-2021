@@ -60,18 +60,18 @@ public class Post {
 		Entity newPost = new Entity("Post", postKey.toString());
 		Entity newPostIndex = new Entity("PostIndex", postIndexKey.toString(), newPost.getKey());
 
-		newPost.setProperty("sender", post.getSender());
+		newPost.setProperty("sender", post.getSender().getEmail());
 		newPost.setProperty("body", post.getBody());
 		newPost.setProperty("url", post.getUrl());
 
 		Query query = new Query("Follow")
-				.setFilter(new Query.FilterPredicate("following", Query.FilterOperator.EQUAL, post.getSender()));
+				.setFilter(new Query.FilterPredicate("following", Query.FilterOperator.EQUAL, post.getSender().getEmail()));
 
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
 		List<Entity> result = preparedQuery.asList(FetchOptions.Builder.withDefaults());
 
 		List<String> keys = new ArrayList<>();
-		result.forEach(entity -> keys.add(entity.getKey().getName()));
+		result.forEach(entity -> keys.add(entity.getParent().getName()));
 
 		HashSet<String> followers = new HashSet<>(keys);
 
@@ -122,9 +122,19 @@ public class Post {
 	public long getLike() {
 		return this.like;
 	}
-	public static Post entityToPost(Entity i) {
-		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 
-		return new Post((User)i.getProperty("sender"), (String)i.getProperty("body"), (String)i.getProperty("url"), i.getKey(), (long)LikeCounter.countLike(i.getKey()).getObject());
+	private static Post entityToPost(Entity entity) {
+		return new Post(new User((String) entity.getProperty("sender"), "", ""), (String) entity.getProperty("body"), (String) entity.getProperty("url"), entity.getKey(), (long) LikeCounter.countLike(entity.getKey()).getObject());
+	}
+
+	public static Post fetchUserAndFormat(Entity entity) throws EntityNotFoundException {
+		Post post = entityToPost(entity);
+
+		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
+		Entity user = datastoreService.get(KeyFactory.createKey("User", post.getSender().getEmail()));
+
+		post.setSender(User.entityToUser(user));
+
+		return post;
 	}
 }
