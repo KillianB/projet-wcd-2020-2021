@@ -12,10 +12,10 @@ Cloud et son App Engine dans le cadre du cours Web & Cloud and Datastores.
  - Follow quelqu'un
  - Unfollow quelqu'un
  - Like un post
- - TODO: Unlike un post
  - Lister ses follows
  - Listes ses followers
  - Afficher sa timeline
+ <!-- - TODO: Unlike un post-->
  
 Le principal choix d'implémentation qui a été réalisé a été sur les followers. En effet, il n'existe qu'un Kind "Follow",
 dont la clé est la personne qui follow et qui a une liste des following. Cette liste peut contenir que 20000 éléments par
@@ -77,8 +77,37 @@ X likes par secondes :
  - LikeCounter
  - Follow  
 
-TODO
+### Post
+
+Ce kind a été crée pour pouvoir gérer les actions liées aux posts et pouvoir les convertir facilement en objets utilisables en java.
+Les attributs sont les suivants :
+ - sender : renseigne l'identité de la personne à l'origine du post
+ - url : permet d'associer une image à un post défini par son url
+ - body : l'attribut qui contient le corps du message.
+
+### PostIndex
+
+Ce kind est directement associé au message d'origine. Il permet de renseigner les personnes à qui on envoie le messages (ici les followers).
+Il permet au destinataire de recevoir le message d'origine directement grâce à l'index automatiquement généré par google cloud.
+
+### LikeCounter
+
+Ce kind est un type d'entité qui permet de récupérer le nombre de likes du messages avec un minimum de concurrence.
+Pour chaque message nous en créons 10 et lorsque qu'un utilisateur like le post, un des 10 compteurs sera choisi aléatoirement pour sauvegarder le like en cours.
+Par conséquent jusqu'à 10 personnes en même temps peuvent like un même post.
+
+### Follow
+
+Ce kind permet de faire le lien entre un utilisateur et un autre par un lien d'abonnement. En effet, si user1 "follow" user2, alors user1 recevra les messages de user2 lorsque celui-ci va en poster.
+
 
 ## Conclusion
-TODO
+
+Ce projet est complexe à réaliser car il a fallu réfléchir à des moyens de rendre efficace les requêtes et méthodes d'API. Ceux-ci n'ont pas été facile à mettre en oeuvre surtout à cause des problèmes liés aux clés.
+Nous avons eu des difficultés lors de l'élaboration des servlets de mesures d'efficacité des get et post. En effet, pour une raison inconnue, 
+les valeurs que nous obtenons sont très élevées voire aberrantes. L'utilisation de mithril a posé problème surtout sur la gestion des requêtes, des comportements inattendus et compliqués à corriger.
+
+Sinon comme possibilités d'améliorer l'application, la possibilité d'associer un like à un utilisateur pour un post donné permettrait de rajouter la possibilité de unlike un post. En ce qui concerne le front, nous avons remarqué qu'il était pas encore possible de follow une première personne sans passer par l'API directement.
+
+
 
