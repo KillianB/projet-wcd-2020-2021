@@ -24,8 +24,8 @@ import java.util.Map;
         urlPatterns = {"/getNewPostMeasure"}
 )
 public class getNewPostsMeasure extends HttpServlet {
-    //method copied from Endpoint (impossible to use it directly)
-    private CollectionResponse<Post> getTimeline(String user, @Nullable String cursorString) {
+    //method partially copied from Endpoint (impossible to use it directly)
+    private List<Post> getTimeline(String user, @Nullable String cursorString, int nbPostRequired) {
         DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
         //recup postIndex
         Query query = new Query("PostIndex")
@@ -33,11 +33,7 @@ public class getNewPostsMeasure extends HttpServlet {
                 .addSort(Entity.KEY_RESERVED_PROPERTY, Query.SortDirection.DESCENDING)
                 .setKeysOnly();
 
-        FetchOptions fetchOptions = FetchOptions.Builder.withLimit(10);
-
-        if (cursorString != null) {
-            fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
-        }
+        FetchOptions fetchOptions = FetchOptions.Builder.withLimit(nbPostRequired);
 
         PreparedQuery prepquery = DS.prepare(query);
         QueryResultList<Entity> postsI = prepquery.asQueryResultList(fetchOptions);
@@ -47,12 +43,10 @@ public class getNewPostsMeasure extends HttpServlet {
 
         Map<Key, Entity> msgs = DS.get(keys);
 
-        cursorString = postsI.getCursor().toWebSafeString();
-
         List<Post> posts = new ArrayList<>();
         msgs.values().forEach(entity -> posts.add(Post.entityToPost(entity)));
 
-        return CollectionResponse.<Post>builder().setItems(posts).setNextPageToken(cursorString).build();
+        return posts;
     }
 
     //create nMessages from user
@@ -66,15 +60,6 @@ public class getNewPostsMeasure extends HttpServlet {
             message = new Post(sender.toString(),  body.toString(), null);
             Post.postMessage(message);
         }
-    }
-
-    //method copied from Endpoint (impossible to use it directly)
-    private Entity getKindByKey(String kind, Key key, DatastoreService datastoreService) {
-        Query query = new Query(kind)
-                .setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, key));
-        PreparedQuery preparedQuery = datastoreService.prepare(query);
-
-        return preparedQuery.asSingleEntity();
     }
 
     private void deleteMsgTo(String user) {
@@ -93,42 +78,17 @@ public class getNewPostsMeasure extends HttpServlet {
         List<Key> postKeys = new ArrayList<>();
         postIndex.forEach(index -> postKeys.add(index.getParent()));
 
-        List<Entity> likeToDelete;
-        List<Key> likeKeyToDelete = new ArrayList<>();
-        for (Key key : postKeys) {
-            query = new Query("LikeCounter")
-                    .setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.GREATER_THAN_OR_EQUAL, KeyFactory.createKey(KeyFactory.createKey("Post", key.toString()), "LikeCounter", key.toString() + ":like:0")))
-                    .setFilter(new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.LESS_THAN, KeyFactory.createKey(KeyFactory.createKey("Post", key.toString()), "LikeCounter", key.toString() + ":like:10")))
-                    .setKeysOnly();
 
-            preparedQuery = datastoreService.prepare(query);
-            likeToDelete =preparedQuery.asList(FetchOptions.Builder.withDefaults());
-            likeToDelete.forEach(i -> likeKeyToDelete.add(i.getKey()));
-
-        }
+        List<Key> likeKeys = new ArrayList<>();
+        postKeys.forEach(key -> {
+            for (int i = 1; i < 10; i++) {
+                likeKeys.add(KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:" + i));
+            }
+        });
+        datastoreService.delete(likeKeys);
 
         datastoreService.delete(postIndexKeys);
         datastoreService.delete(postKeys);
-        datastoreService.delete(likeKeyToDelete);
-    }
-    //method copied from Endpoint (impossible to use it directly)
-    public Result unfollow(Follow follow) throws NotFoundException {
-        DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
-
-        Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser()), datastoreService);
-
-        if (result == null || result.getProperty("following") == null) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
-
-        HashSet<String> followers = (HashSet<String>) result.getProperty("following");
-
-        if (!followers.remove(follow.getTarget())) throw new NotFoundException("L'utilisateur ou la personne à unfollow n'existe pas.");
-        result.setProperty("following", followers);
-
-        Transaction transaction = datastoreService.beginTransaction();
-        datastoreService.put(result);
-        transaction.commit();
-
-        return new Result(200, "OK");
     }
 
     @Override
@@ -136,7 +96,7 @@ public class getNewPostsMeasure extends HttpServlet {
         response.setContentType("text/plain");
         response.setCharacterEncoding("UTF-8");
 
-        response.getWriter().println("Tests for getting 10, 100 or 500 posts by an user : <br/>");
+        response.getWriter().println("Tests for getting 10, 100 or 500 posts by an user : \n");
 
         //users in the test
         String user1 = "Alice";
@@ -145,89 +105,60 @@ public class getNewPostsMeasure extends HttpServlet {
 
         //create follow
         //method copied from Endpoint (impossible to use it directly)
-        Follow follow = new Follow(user2, user1);
-        Entity result = getKindByKey("Follow", KeyFactory.createKey("Follow", follow.getUser()), datastoreService);
-        HashSet<String> followers = null;
+        Entity follow = new Entity("Follow", user2);
+        HashSet<String> following = new HashSet<>();
+        following.add(user1);
+        follow.setProperty("following", following);
+        datastoreService.put(follow);
+        createMessages(user1, 500);
 
-        if (result == null) result = new Entity("Follow", follow.getUser());
-
-        if (result.getProperty("following") == null) followers = new HashSet<>();
-        else followers = new HashSet<>((ArrayList<String>) result.getProperty("following"));
-
-        followers.add(follow.getTarget());
-        result.setProperty("following", followers);
-
-        Transaction transaction = datastoreService.beginTransaction();
-        datastoreService.put(result);
-        transaction.commit();
         long startTime;
         long endTime;
-        List<Long> resultOfTests10 = new ArrayList<Long>();
+        List<Post> listPost;
 
+        long moyenne10 = 0;
         //create the 10 firsts messages to see if we can get them in a correct time
         for (int i = 0; i < 30; i++){
-            createMessages(user1, 10);
             //start test
             startTime = System.currentTimeMillis();
-            getTimeline(user2, null);
+            listPost = getTimeline(user2, null, 10);
             endTime = System.currentTimeMillis();
             //end test
-            resultOfTests10.add(endTime-startTime);
-        }
-        long moyenne10 = 0;
-        for (int i = 0; i < 30; i++) {
-            moyenne10 += resultOfTests10.get(i);
+            if (listPost.size() != 10) response.getWriter().println("messages missing\n");
+            moyenne10 += endTime-startTime;
         }
         moyenne10 = moyenne10/30;
         response.getWriter().println("On 30 tests, getting 10 news posts, the getTimeLine method perform on average " + moyenne10 + " ms.");
-        //delete created msg
-        deleteMsgTo(user2);
 
-        List<Long> resultOfTests100 = new ArrayList<Long>();
+        long moyenne100 = 0;
         for (int i = 0; i < 30; i++){
-            createMessages(user1, 100);
             //start test
             startTime = System.currentTimeMillis();
-            getTimeline(user2, null);
+            listPost = getTimeline(user2, null, 100);
             endTime = System.currentTimeMillis();
             //end test
-            resultOfTests100.add(endTime-startTime);
-        }
-        long moyenne100 = 0;
-        for (int i = 0; i < 30; i++) {
-            moyenne100 += resultOfTests10.get(i);
+            moyenne100 += endTime-startTime;
+            if (listPost.size() != 100) response.getWriter().println("messages missing\n");
         }
         moyenne100 = moyenne100/30;
         response.getWriter().println("On 30 tests, getting 100 news posts, the getTimeLine method perform on average " + moyenne100 + " ms.");
-        //delete created msg
-        deleteMsgTo(user2);
 
-        List<Long> resultOfTests500 = new ArrayList<Long>();
+        long moyenne500 = 0;
         for (int i = 0; i < 30; i++){
-            createMessages(user1, 500);
             //start test
             startTime = System.currentTimeMillis();
-            getTimeline(user2, null);
+            listPost = getTimeline(user2, null, 500);
             endTime = System.currentTimeMillis();
             //end test
-            resultOfTests500.add(endTime-startTime);
-        }
-        long moyenne500 = 0;
-        for (int i = 0; i < 30; i++) {
-            moyenne500 += resultOfTests10.get(i);
+            moyenne500 += endTime-startTime;
+            if (listPost.size() != 500) response.getWriter().println("messages missing\n");
         }
         moyenne500 = moyenne500/30;
         response.getWriter().println("On 30 tests, getting 500 news posts, the getTimeLine method perform on average " + moyenne500 + " ms.");
-        //delete created msg
-        deleteMsgTo(user2);
 
         //delete msg and follow used during the test
-        try {
-            deleteMsgTo(user2);
-            unfollow(follow);
-            response.getWriter().println("tested objects are deleted");
-        } catch (NotFoundException e) {
-            e.printStackTrace();
-        }
+        deleteMsgTo(user2);
+        datastoreService.delete(follow.getKey());
+        response.getWriter().println("tested objects are deleted");
     }
 }
