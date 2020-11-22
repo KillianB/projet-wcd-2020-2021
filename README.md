@@ -44,16 +44,18 @@ présentant le projet. Tout les benchmarks ont été réalisé sur 30 mesures po
 Le premier benchmark est le suivant : en fonction du nombre de followers d'une personne (10, 100, 500), combien de temps
 prends la création d'un message ?
 
-Création d'un message avec 10 followers : 
-Création d'un message avec 100 followers : 
-Création d'un message avec 500 followers : 
+Création d'un message avec 10 followers : 179 ms \
+Création d'un message avec 100 followers : 197 ms \
+Création d'un message avec 500 followers : 470 ms
+
+![screen des benckmark des posts](/screens/screenFromMeasurePost.png "")
 
 ### Afficher les posts
 
 Le second benchmark est le suivant : combien de temps prends l'affichage des posts d'une personne par 10, 100 ou 500 posts ?
 Le servlet qui nous a permis de réaliser les mesures est src/java/tests/getNewPostsMeasure.java. Pour des raisons inconnues il renvoie rarement des résultats.
 
-![screen des resultats obtenus](/screens/screenFromMeasureGetTimeLine.png? "screen des résultats obtenus")
+![screen des resultats obtenus](/screens/screenFromMeasureGetTimeLine.png "screen des résultats obtenus")
 
 
 réception de 10 posts : 998 ms \
