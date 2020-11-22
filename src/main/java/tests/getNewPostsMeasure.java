@@ -7,25 +7,90 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.api.server.spi.config.Nullable;
 import com.google.api.server.spi.response.CollectionResponse;
-import com.google.api.server.spi.response.NotFoundException;
 import com.google.appengine.api.datastore.*;
-import entities.Follow;
 import entities.Post;
-import entities.Result;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @WebServlet(
         name = "getTimeLineMeasure",
         urlPatterns = {"/getNewPostMeasure"}
 )
 public class getNewPostsMeasure extends HttpServlet {
-    //method partially copied from Endpoint (impossible to use it directly)
-    private List<Post> getTimeline(String user, @Nullable String cursorString, int nbPostRequired) {
+    @Override
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("text/plain");
+        response.setCharacterEncoding("UTF-8");
+
+        response.getWriter().println("Tests for getting 10, 100 or 500 posts by an user : <br/>");
+
+        DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
+
+        Entity follow = new Entity("Follow", "Alice");
+        HashSet<String> following = new HashSet<>();
+        following.add("Bob");
+        follow.setProperty("following", following);
+
+        datastoreService.put(follow);
+
+        long startTime;
+        long endTime;
+        long result = 0;
+
+        createMessages("Bob", 10);
+
+        //create the 10 firsts messages to see if we can get them in a correct time
+        for (int i = 0; i < 30; i++){
+            //start test
+            startTime = System.currentTimeMillis();
+            getTimeline("Alice", null);
+            endTime = System.currentTimeMillis();
+            //end test
+            result += endTime-startTime;
+        }
+
+        response.getWriter().println("On 30 tests, getting 10 news posts, the getTimeLine method perform on average " + result/30 + " ms.");
+
+        result = 0;
+        createMessages("Bob", 90);
+
+        for (int i = 0; i < 30; i++){
+            //start test
+            startTime = System.currentTimeMillis();
+            getTimeline("Alice", null);
+            endTime = System.currentTimeMillis();
+            //end test
+            result += endTime-startTime;
+        }
+
+        response.getWriter().println("On 30 tests, getting 100 news posts, the getTimeLine method perform on average " + result/30 + " ms.");
+
+        result = 0;
+        createMessages("Bob", 400);
+
+        for (int i = 0; i < 30; i++){
+            //start test
+            startTime = System.currentTimeMillis();
+            getTimeline("Alice", null);
+            endTime = System.currentTimeMillis();
+            //end test
+            result += endTime-startTime;
+        }
+
+        response.getWriter().println("On 30 tests, getting 500 news posts, the getTimeLine method perform on average " + result/30 + " ms.");
+
+        try {
+            TimeUnit.SECONDS.sleep(1);
+            removeAllEntities();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //method copied from Endpoint (impossible to use it directly)
+    private CollectionResponse<Post> getTimeline(String user, @Nullable String cursorString) {
         DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
         //recup postIndex
         Query query = new Query("PostIndex")
@@ -33,7 +98,11 @@ public class getNewPostsMeasure extends HttpServlet {
                 .addSort(Entity.KEY_RESERVED_PROPERTY, Query.SortDirection.DESCENDING)
                 .setKeysOnly();
 
-        FetchOptions fetchOptions = FetchOptions.Builder.withLimit(nbPostRequired);
+        FetchOptions fetchOptions = FetchOptions.Builder.withLimit(10);
+
+        if (cursorString != null) {
+            fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
+        }
 
         PreparedQuery prepquery = DS.prepare(query);
         QueryResultList<Entity> postsI = prepquery.asQueryResultList(fetchOptions);
@@ -43,30 +112,26 @@ public class getNewPostsMeasure extends HttpServlet {
 
         Map<Key, Entity> msgs = DS.get(keys);
 
+        cursorString = postsI.getCursor().toWebSafeString();
+
         List<Post> posts = new ArrayList<>();
         msgs.values().forEach(entity -> posts.add(Post.entityToPost(entity)));
 
-        return posts;
+        return CollectionResponse.<Post>builder().setItems(posts).setNextPageToken(cursorString).build();
     }
 
     //create nMessages from user
     private void createMessages(String user, int nMessages) {
-        Post message;
-        for (int i = 1; i <= nMessages; i++) {
-            StringBuilder sender = new StringBuilder(user);
-            StringBuilder body = new StringBuilder("Hello, this is the test ");
-            body.append(i);
-            body.append(".");
-            message = new Post(sender.toString(),  body.toString(), null);
-            Post.postMessage(message);
+        for (int i = 0; i < nMessages; i++) {
+            Post.postMessage(new Post(user,  "", ""));
         }
     }
 
-    private void deleteMsgTo(String user) {
+    private void removeAllEntities() {
         DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
         Query query = new Query("PostIndex")
-                .setFilter(new Query.FilterPredicate("receivers", Query.FilterOperator.EQUAL, user))
+                .setFilter(new Query.FilterPredicate("receivers", Query.FilterOperator.EQUAL, "Alice"))
                 .addSort(Entity.KEY_RESERVED_PROPERTY, Query.SortDirection.DESCENDING)
                 .setKeysOnly();
 
@@ -78,87 +143,16 @@ public class getNewPostsMeasure extends HttpServlet {
         List<Key> postKeys = new ArrayList<>();
         postIndex.forEach(index -> postKeys.add(index.getParent()));
 
-
-        List<Key> likeKeys = new ArrayList<>();
+        List<Key> likeCountersKey = new ArrayList<>();
         postKeys.forEach(key -> {
-            for (int i = 1; i < 10; i++) {
-                likeKeys.add(KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:" + i));
+            for (int i = 0; i < 10; i++) {
+                likeCountersKey.add(KeyFactory.createKey(key, "LikeCounter", key.getName() + ":like:" + i));
             }
         });
-        datastoreService.delete(likeKeys);
 
         datastoreService.delete(postIndexKeys);
         datastoreService.delete(postKeys);
-    }
-
-    @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.setContentType("text/plain");
-        response.setCharacterEncoding("UTF-8");
-
-        response.getWriter().println("Tests for getting 10, 100 or 500 posts by an user : \n");
-
-        //users in the test
-        String user1 = "Alice";
-        String user2 = "Bob";
-        DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
-
-        //create follow
-        //method copied from Endpoint (impossible to use it directly)
-        Entity follow = new Entity("Follow", user2);
-        HashSet<String> following = new HashSet<>();
-        following.add(user1);
-        follow.setProperty("following", following);
-        datastoreService.put(follow);
-        createMessages(user1, 500);
-
-        long startTime;
-        long endTime;
-        List<Post> listPost;
-
-        long moyenne10 = 0;
-        //create the 10 firsts messages to see if we can get them in a correct time
-        for (int i = 0; i < 30; i++){
-            //start test
-            startTime = System.currentTimeMillis();
-            listPost = getTimeline(user2, null, 10);
-            endTime = System.currentTimeMillis();
-            //end test
-            if (listPost.size() != 10) response.getWriter().println("messages missing\n");
-            moyenne10 += endTime-startTime;
-        }
-        moyenne10 = moyenne10/30;
-        response.getWriter().println("On 30 tests, getting 10 news posts, the getTimeLine method perform on average " + moyenne10 + " ms.");
-
-        long moyenne100 = 0;
-        for (int i = 0; i < 30; i++){
-            //start test
-            startTime = System.currentTimeMillis();
-            listPost = getTimeline(user2, null, 100);
-            endTime = System.currentTimeMillis();
-            //end test
-            moyenne100 += endTime-startTime;
-            if (listPost.size() != 100) response.getWriter().println("messages missing\n");
-        }
-        moyenne100 = moyenne100/30;
-        response.getWriter().println("On 30 tests, getting 100 news posts, the getTimeLine method perform on average " + moyenne100 + " ms.");
-
-        long moyenne500 = 0;
-        for (int i = 0; i < 30; i++){
-            //start test
-            startTime = System.currentTimeMillis();
-            listPost = getTimeline(user2, null, 500);
-            endTime = System.currentTimeMillis();
-            //end test
-            moyenne500 += endTime-startTime;
-            if (listPost.size() != 500) response.getWriter().println("messages missing\n");
-        }
-        moyenne500 = moyenne500/30;
-        response.getWriter().println("On 30 tests, getting 500 news posts, the getTimeLine method perform on average " + moyenne500 + " ms.");
-
-        //delete msg and follow used during the test
-        deleteMsgTo(user2);
-        datastoreService.delete(follow.getKey());
-        response.getWriter().println("tested objects are deleted");
+        datastoreService.delete(KeyFactory.createKey("Follow", "Alice"));
+        datastoreService.delete(likeCountersKey);
     }
 }
