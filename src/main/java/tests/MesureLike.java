@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 @WebServlet(
@@ -29,14 +30,30 @@ public class MesureLike extends HttpServlet {
         Key key = createMessages(new User());
         long totalLike = 0;
         List<Thread> thread = new ArrayList<>();
+        thread.add(null);
+        thread.add(null);
+        thread.add(null);
+        thread.add(null);
+        thread.add(null);
+        thread.add(null);
+        thread.add(null);
+        thread.add(null);
+        thread.add(null);
+        thread.add(null);
+
         long currentlyNbLike = (long)(LikeCounter.countLike(key).getObject());
-        while (currentlyNbLike == totalLike) {
+        while (currentlyNbLike == totalLike+thread.size()) {
             for (int i = 0; i < thread.size(); i++) {
                 thread.set(i, new Thread(new Run(key)));
             }
             totalLike = (long)(LikeCounter.countLike(key).getObject());
-
+            try {
+                TimeUnit.MILLISECONDS.sleep(250);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
                 new Thread(new Run(key));
 
 
