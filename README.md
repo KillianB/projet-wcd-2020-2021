@@ -67,9 +67,9 @@ réception de 500 posts : 914 ms.
 
 Le dernier benchmark est le suivant : combien de like par seconde est-il possible de réaliser ?
 
-X likes par secondes : 
-X likes par secondes : 
-X likes par secondes : 
+Pour notre projet, nous somme capable d'assurer un peu moins de 2 likes par seconde en moyenne par post
+
+![screen for like experimentation](/screens/screenMeausreLike.png)
 
 ## Les kinds utilisés
 
