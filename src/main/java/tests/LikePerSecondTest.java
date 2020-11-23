@@ -28,6 +28,7 @@ public class LikePerSecondTest extends HttpServlet {
 
 		response.getWriter().println("Tests pour le nombre de like par seconde.");
 
+		int nbLike = Integer.parseInt((String) request.getParameter("nb"));
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		User user = new User("t@t.com", "t", "t");
@@ -39,7 +40,6 @@ public class LikePerSecondTest extends HttpServlet {
 
 		Entity post = Post.postMessage(new Post(user, "", ""));
 
-		int nbLike = Integer.parseInt((String) request.getParameter("nb"));
 		List<Runnable> runnables = createRunnables(nbLike, post.getKey(), datastoreService);
 
 		long total = 0;
