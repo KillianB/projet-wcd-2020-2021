@@ -39,7 +39,7 @@ public class LikePerSecondTest extends HttpServlet {
 
 		Entity post = Post.postMessage(new Post(user, "", ""));
 
-		int nbLike = 49;
+		int nbLike = Integer.parseInt((String) request.getParameter("nb"));
 		List<Runnable> runnables = createRunnables(nbLike, post.getKey(), datastoreService);
 
 		long total = 0;
