@@ -199,7 +199,8 @@
                 m('div', [
                     // Notifications
                     m('div', Profile.notifications),
-                    m(Modal)
+                    m(Modal),
+                    m(Users)
                 ]),
                 // Header
                 m('div', {class:'hero-head has-background-light', style:'position:fixed; width:100%'}, [
@@ -219,6 +220,15 @@
 
                                 // Profil name
                                 m('h1', {class: 'navbar-item title', style:'margin-top:auto; margin-bottom:auto'}, Profile.name),
+
+                                // Users
+                                m('a', {
+                                    class: 'navbar-item subtitle',
+                                    style:'margin-top:auto; margin-bottom:auto',
+                                    onclick:function () {
+                                        Users.open();
+                                    }
+                                }, "Utilisateurs"),
 
                                 // Follows
                                 m('a', {
@@ -474,7 +484,7 @@
                                     m('p', {
                                         class:'level-item',
                                         style:'margin-top: auto; margin-bottom: auto'
-                                    }, Modal.name + " - " + Modal.title),
+                                    }, Modal.name + " - " + Modal.title)
                                 ])
                             ])
                         ]),
@@ -577,6 +587,87 @@
                     Profile.dangerNotification("Un erreur s'est produite");
                 })
 
+        }
+    }
+
+    // TODO: init isFollowed des User (non nécessaire)
+    // Done (sauf non nécessaire)
+    let Users = {
+        users:[],
+        nextTokenUsers:"",
+        view: function() {
+            return m('div', {class:'modal', id:'Users'}, [
+                // Shadow background
+                m('div', {class:'modal-background', onclick: Users.exit}),
+
+                // Card
+                m('div', {class:'modal-card'}, [
+
+                    // Header
+                    m('header', {class:'modal-card-head'}, [
+                        m('div', {class:'modal-card-title'}, [
+                            m('nav', {class:'level'}, [
+                                m('div', {class:'level-left'}, [
+                                    m('p', {
+                                        class:'level-item',
+                                        style:'margin-top: auto; margin-bottom: auto'
+                                    }, "TinyGram - Utilisateurs")
+                                ])
+                            ])
+                        ]),
+                        m('button', {class:'delete is-large', 'aria-label':'close', onclick: Users.exit})
+                    ]),
+
+                    // Body
+                    m('section', {id:'UsersBody' ,class:'modal-card-body has-background-grey-light'}, Users.users),
+
+                    // Footer
+                    m('footer', {class:'modal-card-foot'}, [
+                        m('button', {
+                            class:'button is-info',
+                            onclick: () => {
+                                Users.next()
+                            }
+                        }, 'Afficher plus')
+                    ])
+                ])
+            ])
+        },
+        exit: function() {
+            document.getElementById('Users').classList.remove('is-active')
+            document.getElementById('PAGE').classList.remove('is-clipped')
+        },
+        open: function() {
+            Users.users = [];
+            Users.nextTokenFollows = "";
+
+            document.getElementById('Users').classList.add('is-active')
+            document.getElementById('PAGE').classList.add('is-clipped')
+
+            Users.next();
+        },
+        next: function() {
+            let url = "_ah/api/tinyApi/v1/collectionresponse_user";
+            if (!(Users.nextTokenFollows === "")) { url += '?cursorString=' + Users.nextTokenFollows }
+
+            return m.request({
+                method: "GET",
+                url: url
+            })
+                .then(function(result) {
+                    console.log("users: ", result)
+
+                    for(let i in result.items) {
+                        let item = result.items[i]
+                        let user = new User(item.name, item.email, item.urlAvatar, false);
+                        Users.users.push(m(user));
+                    }
+
+                    if ('nextPageToken' in result) { Users.nextTokenFollows = result.nextPageToken }
+                })
+                .catch(function() {
+                    Profile.dangerNotification("Un erreur s'est produite");
+                })
         }
     }
 
