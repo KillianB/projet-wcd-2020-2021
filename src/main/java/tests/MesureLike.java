@@ -70,6 +70,19 @@ public class MesureLike extends HttpServlet {
         response.getWriter().println("for this test we can assure at least "+ (success-2) + " likes in a second.");
         DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
         DS.delete(key);
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+0));
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+1));
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+2));
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+3));
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+4));
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+5));
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+6));
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+7));
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+8));
+        DS.delete(KeyFactory.createKey("LikeCounter", key.getName()+":like:"+9));
+
+
+
     }
 
     private Key createMessages(User user) {
