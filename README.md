@@ -120,8 +120,9 @@ inconnue, les valeurs que nous obtenons sont très élevées voire aberrantes. L
 surtout sur la gestion des requêtes, des comportements inattendus et compliqués à corriger.
 
 Sinon comme possibilités d'améliorer l'application, la possibilité d'associer un like à un utilisateur pour un post 
-donné permettrait de rajouter la possibilité de unlike un post. En ce qui concerne le front, un refactoring serait pas
-mal pour augmenter la lisibilité du code et sa manipulation. Une meilleur compréhension des Promise de mithril.js pour
-mieux gérer les requêtes effectuées pour intéragir correctement selon les réponses.
+donné permettrait de rajouter la possibilité de unlike un post et que chaque utilisateur puisse like au plus une fois.
+En ce qui concerne le front, un refactoring serait pas mal pour augmenter la lisibilité du code et sa manipulation. Une
+meilleur compréhension des Promise de mithril.js pour mieux gérer les requêtes effectuées pour intéragir correctement
+selon les réponses.
 
 
