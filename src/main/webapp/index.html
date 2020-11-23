@@ -41,7 +41,10 @@
                 m('article', {class:'media'}, [
                     m('div', {class:'media-left'}, [
                         m('figure', {class:'image is-32x32'}, [
-                            m('img', {src:this.url})
+                            m('img', {
+                                src:this.url,
+                                style:'border-radius: 50%; margin-top: auto; margin-bottom: auto'
+                            })
                         ])
                     ]),
                     m('div', {class:'media-content'}, [
@@ -81,6 +84,7 @@
                 }
             }
             this.isFollowed = !this.isFollowed;
+            document.activeElement.blur();
         }
     }
 
@@ -496,18 +500,31 @@
 
                     // Footer
                     m('footer', {class:'modal-card-foot'}, [
-                        m('button', {
-                            class:'button is-info',
-                            onclick: () => {
-                                if (Modal.request === "followed") { Modal.followed() }
-                                else {
-                                    if (Modal.request === "followers") { Modal.followers() }
-                                    else {
-                                        Profile.dangerNotification("Une erreur est survenue !")
+                        m('nav', {class:'level block'}, [
+                            m('div', {class:'level-left'}, [
+                                m('button', {
+                                    class:'button is-info',
+                                    onclick: () => {
+                                        document.activeElement.blur()
+                                        if (Modal.request === "followed") { Modal.followed() }
+                                        else {
+                                            if (Modal.request === "followers") { Modal.followers() }
+                                            else {
+                                                Profile.dangerNotification("Une erreur est survenue !")
+                                            }
+                                        }
                                     }
-                                }
-                            }
-                        }, 'Afficher plus')
+                                }, 'Afficher plus'),
+                                m('button', {
+                                    id:'ModalRefreshButton',
+                                    class:'button is-info',
+                                    onclick: () => {
+                                        document.activeElement.blur()
+                                        Modal.refresh()
+                                    }
+                                }, 'Recharger')
+                            ])
+                        ])
                     ])
                 ])
             ])
@@ -528,13 +545,8 @@
             document.getElementById('Modal').classList.add('is-active')
             document.getElementById('PAGE').classList.add('is-clipped')
 
-            if (request === "followers") {
-                Modal.followers()
-            }
-
-            if (request === "followed") {
-                Modal.followed()
-            }
+            if (Modal.request === "followers") { Modal.followers() }
+            if (Modal.request === "followed") { Modal.followed() }
         },
         followers: function() {
             let url = "_ah/api/tinyApi/v1/followersList/" + Modal.email;
@@ -587,6 +599,17 @@
                     Profile.dangerNotification("Un erreur s'est produite");
                 })
 
+        },
+        refresh: function() {
+            document.getElementById('ModalRefreshButton').classList.add('is-loading');
+
+            Modal.follows = [];
+            Modal.nextTokenFollows = "";
+
+            if (Modal.request === "followers") { Modal.followers() }
+            if (Modal.request === "followed") { Modal.followed() }
+
+            document.getElementById('ModalRefreshButton').classList.remove('is-loading');
         }
     }
 
@@ -623,12 +646,25 @@
 
                     // Footer
                     m('footer', {class:'modal-card-foot'}, [
-                        m('button', {
-                            class:'button is-info',
-                            onclick: () => {
-                                Users.next()
-                            }
-                        }, 'Afficher plus')
+                        m('nav', {class:'level block'}, [
+                            m('div', {class:'level-left'}, [
+                                m('button', {
+                                    class:'button is-info',
+                                    onclick: () => {
+                                        document.activeElement.blur()
+                                        Users.next()
+                                    }
+                                }, 'Afficher plus'),
+                                m('button', {
+                                    id:'UsersRefreshButton',
+                                    class:'button is-info',
+                                    onclick: () => {
+                                        document.activeElement.blur()
+                                        Users.refresh()
+                                    }
+                                }, 'Recharger')
+                            ])
+                        ])
                     ])
                 ])
             ])
@@ -668,6 +704,16 @@
                 .catch(function() {
                     Profile.dangerNotification("Un erreur s'est produite");
                 })
+        },
+        refresh: function() {
+            document.getElementById('UsersRefreshButton').classList.add('is-loading');
+
+            Users.users = [];
+            Users.nextTokenFollows = "";
+
+            Users.next();
+
+            document.getElementById('UsersRefreshButton').classList.remove('is-loading');
         }
     }
 
@@ -798,13 +844,14 @@
     // Done
     let TimeLineButton = {
         view: function() {
-            return m('div', {class:'block'},
-                m('button', {
-                    id:'TimeLineButton',
-                    class:'button is-info is-outlined',
-                    onclick: (e) => { Profile.next() }
-                }, "Afficher plus de messages")
-            )
+            return m('button', {
+                id:'TimeLineButton',
+                class:'level-item button is-info is-outlined',
+                onclick: () => {
+                    document.activeElement.blur()
+                    Profile.next();
+                }
+            }, "Afficher plus de messages")
         },
         // TODO: NotWorking alors que la même chose pour PostMessageButton fonctionne (non nécessaire)
         // START
@@ -818,13 +865,41 @@
     }
 
     // Done
+    let TimeLineRefreshButton = {
+        view: function() {
+            return m('button', {
+                id:'TimeLineRefreshButton',
+                class:'level-item button is-info is-outlined',
+                onclick: () => {
+                    document.activeElement.blur()
+                    TimeLine.refresh();
+                }
+            }, "Recharger la timeline")
+        },
+        // TODO: NotWorking alors que la même chose pour PostMessageButton fonctionne (non nécessaire)
+        // START
+        loading: function() {
+            document.getElementById('TimeLineRefreshButton').classList.add('is-loading');
+        },
+        unloading: function () {
+            document.getElementById('TimeLineRefreshButton').classList.remove('is-loading');
+        }
+        // END
+    }
+
+    // Done
     let TimeLine = {
         buttonClass: "button is-info is-outlined",
         listItems:[m(PostMessage)],
         view: function() {
             return m('div', [
                 m('div', {class:'block'}, TimeLine.listItems),
-                m(TimeLineButton)
+                m('nav', {class:'level block'}, [
+                    m('div', {class:'level-left'}, [
+                        m(TimeLineButton),
+                        m(TimeLineRefreshButton)
+                    ])
+                ])
             ])
         },
         updateMessage: function(items) {
@@ -833,6 +908,13 @@
                 let message = new Message(item.key.name, item.sender.name, item.sender.email, item.sender.urlAvatar, item.url, item.body, item.like);
                 TimeLine.listItems.push(m(message));
             }
+        },
+        refresh: function () {
+            TimeLineRefreshButton.loading();
+            TimeLine.listItems = [m(PostMessage)];
+            Profile.nextMessageToken = "";
+            Profile.next();
+            TimeLineRefreshButton.unloading();
         }
     }
 
