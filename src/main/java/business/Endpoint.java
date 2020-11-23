@@ -75,6 +75,27 @@ public class Endpoint {
 		return Post.postMessage(post);
 	}
 
+	@ApiMethod(name = "getUsers", httpMethod = HttpMethod.GET)
+	public CollectionResponse<User> getUsers(@Nullable @Named("cursorString") String cursorString) {
+		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
+
+		Query query = new Query("User");
+
+		FetchOptions fetchOptions = FetchOptions.Builder.withLimit(10);
+
+		if (cursorString != null) {
+			fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
+		}
+
+		PreparedQuery preparedQuery = datastoreService.prepare(query);
+		QueryResultList<Entity> users = preparedQuery.asQueryResultList(fetchOptions);
+
+		List<User> formattedUsers = new ArrayList<>();
+		users.forEach(user -> formattedUsers.add(User.entityToUser(user)));
+
+		return CollectionResponse.<User>builder().setItems(formattedUsers).setNextPageToken(cursorString).build();
+	}
+
 	@ApiMethod(name = "updateOrCreateUser", httpMethod = HttpMethod.POST)
 	public Entity updateOrCreateUser(User user) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
