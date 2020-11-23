@@ -75,8 +75,8 @@ public class Endpoint {
 		return Post.postMessage(post);
 	}
 
-	@ApiMethod(name = "updateUser", httpMethod = HttpMethod.POST)
-	public Entity updateUser(User user) {
+	@ApiMethod(name = "updateOrCreateUser", httpMethod = HttpMethod.POST)
+	public Entity updateOrCreateUser(User user) {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		Entity userDB;

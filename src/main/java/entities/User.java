@@ -41,6 +41,6 @@ public class User {
 	}
 
 	public static User entityToUser(Entity entity) {
-		return new User((String) entity.getProperty("email"), (String) entity.getProperty("name"), (String) entity.getProperty("urlAvatar"));
+		return new User(entity.getKey().getName(), (String) entity.getProperty("name"), (String) entity.getProperty("urlAvatar"));
 	}
 }
