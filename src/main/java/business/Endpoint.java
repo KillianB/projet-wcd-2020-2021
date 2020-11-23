@@ -93,6 +93,8 @@ public class Endpoint {
 		List<User> formattedUsers = new ArrayList<>();
 		users.forEach(user -> formattedUsers.add(User.entityToUser(user)));
 
+		cursorString = users.getCursor().toWebSafeString();
+
 		return CollectionResponse.<User>builder().setItems(formattedUsers).setNextPageToken(cursorString).build();
 	}
 
