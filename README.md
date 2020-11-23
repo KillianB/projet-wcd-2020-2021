@@ -124,7 +124,9 @@ difficultés lors de l'élaboration des servlets de mesures d'efficacité des ge
 inconnue, les valeurs que nous obtenons sont très élevées voire aberrantes. L'utilisation de mithril a posé problème
 surtout sur la gestion des requêtes, des comportements inattendus et compliqués à corriger. Un autre problème que nous 
 avons rencontré c'est que nous n'arrivons pas a faire fonctionner le "try this Api" du portail google. Nous ne pouvons
-donc pas utiliser directement l'API.
+donc pas utiliser directement l'API. Ce même portail nous a également posé problème sur le nom certaines méthodes de l'API
+Nous avons des méthodes dont le nom dans le portail est en fait le type de retour (par exemple notre méthode getTimeLine 
+s'appelle CollectionReponse_Post sur le portail).
 
 Sinon comme possibilités d'améliorer l'application, la possibilité d'associer un like à un utilisateur pour un post 
 donné permettrait de rajouter la possibilité de unlike un post et que chaque utilisateur puisse like au plus une fois.
