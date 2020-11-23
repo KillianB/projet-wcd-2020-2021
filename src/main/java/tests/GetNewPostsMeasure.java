@@ -31,8 +31,8 @@ public class GetNewPostsMeasure extends HttpServlet {
 
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		User bob = new User("Bob", "a", "a");
-		User alice = new User("Alice", "b", "b");
+		User bob = new User("Bob@gmail.com", "a", "a");
+		User alice = new User("Alice@gmail.com", "b", "b");
 
 		Entity bobE = new Entity("User", bob.getEmail());
 		bobE.setProperty("name", bob.getName());
@@ -153,7 +153,7 @@ public class GetNewPostsMeasure extends HttpServlet {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		Query query = new Query("PostIndex")
-				.setFilter(new Query.FilterPredicate("receivers", Query.FilterOperator.EQUAL, "Alice"))
+				.setFilter(new Query.FilterPredicate("receivers", Query.FilterOperator.EQUAL, "Alice@gmail.com"))
 				.addSort(Entity.KEY_RESERVED_PROPERTY, Query.SortDirection.DESCENDING)
 				.setKeysOnly();
 
@@ -174,9 +174,9 @@ public class GetNewPostsMeasure extends HttpServlet {
 
 		datastoreService.delete(postIndexKeys);
 		datastoreService.delete(postKeys);
-		datastoreService.delete(KeyFactory.createKey(KeyFactory.createKey("User", "Alice"), "Follow", "Alice:follow"));
-		datastoreService.delete(KeyFactory.createKey("User", "Alice"));
-		datastoreService.delete(KeyFactory.createKey("User", "Bob"));
+		datastoreService.delete(KeyFactory.createKey(KeyFactory.createKey("User", "Alice"), "Follow", "Alice@gmail.com:follow"));
+		datastoreService.delete(KeyFactory.createKey("User", "Alice@gmail.com"));
+		datastoreService.delete(KeyFactory.createKey("User", "Bob@gmail.com"));
 		datastoreService.delete(likeCountersKey);
 	}
 }
