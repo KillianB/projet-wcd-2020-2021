@@ -75,7 +75,8 @@ X likes par secondes :
  - Post
  - PostIndex
  - LikeCounter
- - Follow  
+ - Follow
+ - User  
 
 ### Post
 
@@ -100,6 +101,9 @@ Par conséquent jusqu'à 10 personnes en même temps peuvent like un même post.
 
 Ce kind permet de faire le lien entre un utilisateur et un autre par un lien d'abonnement. En effet, si user1 "follow" user2, alors user1 recevra les messages de user2 lorsque celui-ci va en poster.
 
+### User
+
+Ce kind nous permet de stocker dans le datastore les nom et photo de profil des utilisateurs de l'application. Ces éléments seront affichés sur le message envoyé par l'utilisateur.
 
 ## Conclusion
 
