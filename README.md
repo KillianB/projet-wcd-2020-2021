@@ -13,7 +13,7 @@ Cloud et son App Engine dans le cadre du cours Web & Cloud and Datastores.
  - Unfollow quelqu'un
  - Like un post
  - Lister ses follows
- - Listes ses followers
+ - Lister ses followers
  - Afficher sa timeline
  <!-- - TODO: Unlike un post-->
  
