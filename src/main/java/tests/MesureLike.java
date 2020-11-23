@@ -46,13 +46,15 @@ public class MesureLike extends HttpServlet {
         thread.add(null);
         thread.add(null);
         thread.add(null);
-
+        int success = thread.size();
         long currentlyNbLike = (long)(LikeCounter.countLike(key).getObject());
+
         while (currentlyNbLike == totalLike+thread.size()) {
             for (int i = 0; i < thread.size(); i++) {
                 thread.set(i, new Thread(new Run(key)));
                 thread.get(i).start();
             }
+            thread.add(new Thread(new Run(key)));
 
             try {
                 TimeUnit.SECONDS.sleep(1);
@@ -64,6 +66,9 @@ public class MesureLike extends HttpServlet {
             }
             totalLike = (long)(LikeCounter.countLike(key).getObject());
         }
+
+        response.getWriter().println("for this test we can assure at least "+ (success-2) + " likes in a second.");
+
     }
 
     private Key createMessages(User user) {
