@@ -27,6 +27,8 @@ public class Endpoint {
 	@ApiMethod(name = "timeline", httpMethod = HttpMethod.GET)
 	public CollectionResponse<Post> getTimeline(@Named("user") String user, @Nullable @Named("cursorString") String cursorString)
 		throws EntityNotFoundException {
+		user = user.replace("%3A", ":");
+
 		DatastoreService DS = DatastoreServiceFactory.getDatastoreService();
 		//recup postIndex
 		Query query = new Query("PostIndex")
@@ -102,7 +104,7 @@ public class Endpoint {
 		Entity result = getKindByKey("Follow", KeyFactory.createKey(KeyFactory.createKey("User", follow.getUser().getEmail()), "Follow", follow.getUser().getEmail() + ":follow"), datastoreService);
 		HashSet<String> followers = null;
 
-		if (result == null) result = new Entity("Follow", follow.getUser().getEmail(), KeyFactory.createKey("User", follow.getUser().getEmail()));
+		if (result == null) result = new Entity("Follow", follow.getUser().getEmail() + ":follow", KeyFactory.createKey("User", follow.getUser().getEmail()));
 
 		if (result.getProperty("following") == null) followers = new HashSet<>();
 		else followers = new HashSet<>((ArrayList<String>) result.getProperty("following"));
@@ -141,6 +143,8 @@ public class Endpoint {
 
 	@ApiMethod(name = "followed.list", httpMethod = HttpMethod.GET)
 	public CollectionResponse<User> followedList(@Named("user") String user, @Nullable @Named("next") String cursorString) throws NotFoundException, EntityNotFoundException {
+		user = user.replace("%3A", ":");
+
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		Entity follow = getKindByKey("Follow", KeyFactory.createKey(KeyFactory.createKey("User", user), "Follow", user + ":follow"), datastoreService);
@@ -175,6 +179,8 @@ public class Endpoint {
 
 	@ApiMethod(name = "followers.list", httpMethod = HttpMethod.GET)
 	public CollectionResponse<User> followersList(@Named("user") String user, @Nullable @Named("next") String cursorString) throws EntityNotFoundException {
+		user = user.replace("%3A", ":");
+
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		Query query = new Query("Follow")

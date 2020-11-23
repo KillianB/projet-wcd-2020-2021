@@ -14,7 +14,6 @@ public class Post {
 	private User sender;
 	private String body;
 	private String url;
-	private Key key;
 	private long like;
 
 	public Post() {
@@ -24,15 +23,13 @@ public class Post {
 		this.sender = sender;
 		this.body = body;
 		this.url = url;
-		this.key = null;
 		this.like = 0;
 	}
 
-	private Post(User sender, String body, String url, Key key, long like) {
+	private Post(User sender, String body, String url, long like) {
 		this.sender = sender;
 		this.body = body;
 		this.url = url;
-		this.key = key;
 		this.like = like;
 	}
 
@@ -115,16 +112,12 @@ public class Post {
 		this.url = url;
 	}
 
-	public Key getKey() {
-		return this.key;
-	}
-
 	public long getLike() {
 		return this.like;
 	}
 
 	private static Post entityToPost(Entity entity) {
-		return new Post(new User((String) entity.getProperty("sender"), "", ""), (String) entity.getProperty("body"), (String) entity.getProperty("url"), entity.getKey(), (long) LikeCounter.countLike(entity.getKey()).getObject());
+		return new Post(new User((String) entity.getProperty("sender"), "", ""), (String) entity.getProperty("body"), (String) entity.getProperty("url"), (long) LikeCounter.countLike(entity.getKey()).getObject());
 	}
 
 	public static Post fetchUserAndFormat(Entity entity) throws EntityNotFoundException {
