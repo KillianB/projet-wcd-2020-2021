@@ -175,8 +175,8 @@ public class GetNewPostsMeasure extends HttpServlet {
 		datastoreService.delete(postIndexKeys);
 		datastoreService.delete(postKeys);
 		datastoreService.delete(KeyFactory.createKey(KeyFactory.createKey("User", "Alice"), "Follow", "Alice:follow"));
-		datastoreService.delete(KeyFactory.createKey("User", "Alice"));
-		datastoreService.delete(KeyFactory.createKey("User", "Bob"));
+		datastoreService.delete(KeyFactory.createKey("User", "Alice@gmail.com"));
+		datastoreService.delete(KeyFactory.createKey("User", "Bob@gmail.com"));
 		datastoreService.delete(likeCountersKey);
 	}
 }
