@@ -1,5 +1,6 @@
 package tests;
 
+import com.google.appengine.api.ThreadManager;
 import com.google.appengine.api.datastore.*;
 import entities.LikeCounter;
 import entities.Post;
@@ -12,8 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @WebServlet(
@@ -39,57 +39,16 @@ public class LikePerSecondTest extends HttpServlet {
 
 		Entity post = Post.postMessage(new Post(user, "", ""));
 
-		List<Runnable> runnables = createRunnables(10, post.getKey());
+		int nbLike = 49;
+		List<Runnable> runnables = createRunnables(nbLike, post.getKey(), datastoreService);
+
+		long total = 0;
 
 		for (int i = 0; i < 30; i++) {
-			try {
-				TimeUnit.SECONDS.sleep(1);
-				executeRunnables(runnables);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			total += executeRunnables(runnables);
 		}
 
-		response.getWriter().println("10 likes par seconde pendant 30 secondes : " + LikeCounter.countLike(post.getKey()).getObject() + "/300.");
-
-		runnables.addAll(createRunnables(10, post.getKey()));
-
-		for (int i = 0; i < 30; i++) {
-			try {
-				TimeUnit.SECONDS.sleep(1);
-				executeRunnables(runnables);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-
-		response.getWriter().println("20 likes par seconde pendant 30 secondes : " + ((long) LikeCounter.countLike(post.getKey()).getObject() - 300) + "/600.");
-
-		runnables.addAll(createRunnables(20, post.getKey()));
-
-		for (int i = 0; i < 30; i++) {
-			try {
-				TimeUnit.SECONDS.sleep(1);
-				executeRunnables(runnables);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-
-		response.getWriter().println("40 likes par seconde pendant 30 secondes : " + ((long) LikeCounter.countLike(post.getKey()).getObject() - 900) + "/1200.");
-
-		runnables.addAll(createRunnables(60, post.getKey()));
-
-		for (int i = 0; i < 30; i++) {
-			try {
-				TimeUnit.SECONDS.sleep(1);
-				executeRunnables(runnables);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-
-		response.getWriter().println("100 likes par seconde pendant 30 secondes : " + ((long) LikeCounter.countLike(post.getKey()).getObject() - 2100) + "/3000.");
+		response.getWriter().println(nbLike + " likes par seconde (" + total/30 + "ms en moyenne pour " + nbLike + ") pendant sur 30 essais : " + LikeCounter.countLike(post.getKey()).getObject() + "/" + (30 * nbLike) + ".");
 
 		try {
 			TimeUnit.SECONDS.sleep(1);
@@ -99,13 +58,21 @@ public class LikePerSecondTest extends HttpServlet {
 		}
 	}
 
-	private List<Runnable> createRunnables(int nb, Key postKey) {
+	private List<Runnable> createRunnables(int nb, Key postKey, DatastoreService datastoreService) {
 		List<Runnable> tasks = new ArrayList<>();
 
 		for (int i = 0; i < nb; i++) {
 			tasks.add(() -> {
 				try {
-					LikeCounter.like(postKey);
+					Transaction transaction = datastoreService.beginTransaction();
+
+					Entity like = datastoreService.get(KeyFactory.createKey(postKey, "LikeCounter", postKey.getName() + ":like:" + (new Random()).nextInt(10)));
+
+					long n = (long) like.getProperty("like");
+					like.setProperty("like", n + 1);
+					datastoreService.put(like);
+
+					transaction.commit();
 				} catch (EntityNotFoundException e) {
 					e.printStackTrace();
 				}
@@ -115,8 +82,26 @@ public class LikePerSecondTest extends HttpServlet {
 		return tasks;
 	}
 
-	private void executeRunnables(List<Runnable> runnables) {
-		runnables.forEach(Runnable::run);
+	private long executeRunnables(List<Runnable> runnables) {
+		List<Thread> threads = new ArrayList<>();
+
+		long start = System.currentTimeMillis();
+		runnables.forEach(runnable -> {
+			Thread thread = ThreadManager.createThreadForCurrentRequest(runnable);
+			thread.start();
+			threads.add(thread);
+		});
+
+		threads.forEach(thread -> {
+			try {
+				thread.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		});
+
+		long end = System.currentTimeMillis();
+		return end-start;
 	}
 
 	private void removeAllEntities() {
