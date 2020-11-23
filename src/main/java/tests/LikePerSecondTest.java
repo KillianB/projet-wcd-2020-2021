@@ -12,7 +12,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -32,11 +34,23 @@ public class LikePerSecondTest extends HttpServlet {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		User user = new User("t@t.com", "t", "t");
+		User dummy = new User("dummy@t.com", "d", "d");
+
 		Entity userE = new Entity("User", user.getEmail());
 		userE.setProperty("name", user.getName());
 		userE.setProperty("urlAvatar", user.getUrlAvatar());
+		Entity dummyE = new Entity("User", dummy.getEmail());
+		dummyE.setProperty("name", dummy.getName());
+		dummyE.setProperty("urlAvatar", dummy.getUrlAvatar());
+
+		Entity follow = new Entity("Follow", dummy.getEmail() + ":follow", dummyE.getKey());
+		HashSet<String> following = new HashSet<>();
+		following.add(user.getEmail());
+		follow.setProperty("following", following);
 
 		datastoreService.put(userE);
+		datastoreService.put(dummyE);
+		datastoreService.put(follow);
 
 		Entity post = Post.postMessage(new Post(user, "", ""));
 
@@ -108,14 +122,15 @@ public class LikePerSecondTest extends HttpServlet {
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
 		Query query = new Query("PostIndex")
+				.setFilter(new Query.FilterPredicate("receivers", Query.FilterOperator.EQUAL, "dummy@t.com"))
 				.setKeysOnly();
 
 		PreparedQuery preparedQuery = datastoreService.prepare(query);
 		Entity entity = preparedQuery.asSingleEntity();
 		Key postKey = entity.getParent();
 
-		datastoreService.delete(postKey);
 		datastoreService.delete(entity.getKey());
+		datastoreService.delete(postKey);
 
 		List<Key> likeCountersKey = new ArrayList<>();
 		for (int i = 0; i < 10; i++) {
@@ -124,5 +139,7 @@ public class LikePerSecondTest extends HttpServlet {
 
 		datastoreService.delete(likeCountersKey);
 		datastoreService.delete(KeyFactory.createKey("User", "t@t.com"));
+		datastoreService.delete(KeyFactory.createKey("User", "dummy@t.com"));
+		datastoreService.delete(KeyFactory.createKey(KeyFactory.createKey("User", "dummy@t.com"), "Follow", "dummy@t.com:follow"));
 	}
 }
