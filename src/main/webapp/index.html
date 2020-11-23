@@ -398,7 +398,7 @@
                     Profile.infoNotification("Follow effectué")
                 })
                 .catch(function(e) {
-                    console.log("follow: " ,e)
+                    console.log("follow: ", e)
                     Profile.dangerNotification(e)
                 })
         },
@@ -422,7 +422,7 @@
                     Profile.infoNotification("Unfollow effectué")
                 })
                 .catch(function(e) {
-                    console.log("unfollow: " ,e)
+                    console.log("unfollow: ", e)
                     Profile.dangerNotification(e)
                 })
         },
@@ -560,8 +560,7 @@
                 }
             })
                 .then(function(result) {
-                    console.log("followers:" + result)
-                    console.log(result)
+                    console.log("followersList: ", result);
 
                     if (result.items.length === 0) {
                         Profile.dangerNotification("Tout est déjà affiché")
@@ -576,6 +575,10 @@
                     }
                     Modal.nextTokenFollows = result.nextPageToken
                 })
+                .catch(function(e) {
+                    console.log("followersList: ", e);
+                    Profile.dangerNotification(e);
+                })
         },
         // TODO: Fix l'API follow pour pouvoir tester l'API followedList
         followed: function() {
@@ -587,7 +590,7 @@
                 url: url
             })
                 .then(function(result) {
-                    console.log("followed:" + result)
+                    console.log("followedList: ", result)
                     console.log(result)
 
                     if (result.items === undefined || result.items.length === 0) {
@@ -602,6 +605,10 @@
                         }
                     }
                     Modal.nextTokenFollows = result.nextPageToken;
+                })
+                .catch(function(e) {
+                    console.log("followedList: ", e);
+                    Profile.dangerNotification(e);
                 })
         }
     }
