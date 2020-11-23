@@ -173,7 +173,7 @@
         }
     }
 
-    // TODO: Follow/Unfollow dangerNotification (catch)
+    // Done
     let Profile = {
 
         // Attributs
@@ -225,7 +225,7 @@
                                     class: 'navbar-item subtitle',
                                     style:'margin-top:auto; margin-bottom:auto',
                                     onclick:function () {
-                                        Modal.open(Profile.name, Profile.email, Profile.url, "Follows", "followers")
+                                        Modal.open(Profile.name, Profile.email, Profile.url, "Follows", "followed")
                                     }
                                 }, "Follows"),
 
@@ -234,7 +234,7 @@
                                     class: 'navbar-item subtitle',
                                     style:'margin-top:auto; margin-bottom:auto',
                                     onclick:function () {
-                                        Modal.open(Profile.name, Profile.email, Profile.url, "Followers", "followed")
+                                        Modal.open(Profile.name, Profile.email, Profile.url, "Followers", "followers")
                                     }
                                 }, "Followers")
                             ]),
@@ -278,7 +278,7 @@
                 })
                 .catch(function(e) {
                     console.log("updateUser: ", e)
-                    Profile.dangerNotification("Une erreur s'est produite lors de l'update");
+                    Profile.dangerNotification("Une erreur s'est produite");
 
                     Profile.ID = "";
                     m.route.set("/login");
@@ -320,9 +320,8 @@
                         // On termine l'envoi du messages
                         PostMessageButton.unloading();
                     })
-                    .catch(function(e) {
-                        console.log("post_message: ", e)
-                        Profile.dangerNotification(e);
+                    .catch(function() {
+                        Profile.dangerNotification("Un erreur s'est produite");
 
                         // On termine l'envoi du messages
                         PostMessageButton.unloading();
@@ -341,12 +340,7 @@
             let items = [];
 
             // On fait la requête
-            let user = {
-                name:Profile.name,
-                email:Profile.email,
-                urlAvatar:Profile.url
-            }
-            let url = "_ah/api/tinyApi/v1/collectionresponse_post/" + user;
+            let url = "_ah/api/tinyApi/v1/collectionresponse_post/" + Profile.email;
             if (!(Profile.nextMessageToken === "" || Profile.nextMessageToken === undefined)) {
                 url += '?cursorString=' + Profile.nextMessageToken;
             }
@@ -363,9 +357,8 @@
                     TimeLine.updateMessage(items);
                     Profile.infoNotification("Timeline chargée")
                 })
-                .catch(function(e) {
-                    console.log("next: ", e)
-                    Profile.dangerNotification(e)
+                .catch(function() {
+                    Profile.dangerNotification("Un erreur s'est produite");
                 })
 
             if (items === []) {
@@ -378,15 +371,12 @@
             // On retourne le résultat de la requête
             return res;
         },
-        // TODO: Fix l'API follow
         follow: function(target) {
             let body = {
                 user: {
-                    name:Profile.name,
-                    email:Profile.email,
-                    urlAvatar:Profile.url
+                    email:Profile.email
                 },
-                target: target
+                target: target // target étant censé être déjà sous le même format que user
             }
             return m.request({
                 method: "POST",
@@ -397,20 +387,16 @@
                     console.log("follow: ", result);
                     Profile.infoNotification("Follow effectué")
                 })
-                .catch(function(e) {
-                    console.log("follow: ", e)
-                    Profile.dangerNotification(e)
+                .catch(function() {
+                    Profile.dangerNotification("Un erreur s'est produite");
                 })
         },
-        // TODO: Fix l'API unfollow
         unfollow: function(target) {
             let body = {
                 user: {
-                    name:Profile.name,
-                    email:Profile.email,
-                    urlAvatar:Profile.url
+                    email:Profile.email
                 },
-                target: target
+                target: target // target étant censé être déjà sous le même format que user
             }
             return m.request({
                 method: "POST",
@@ -421,9 +407,8 @@
                     console.log("unfollow: ", result);
                     Profile.infoNotification("Unfollow effectué")
                 })
-                .catch(function(e) {
-                    console.log("unfollow: ", e)
-                    Profile.dangerNotification(e)
+                .catch(function() {
+                    Profile.dangerNotification("Un erreur s'est produite");
                 })
         },
         like: function(message) {
@@ -435,9 +420,8 @@
                     console.log("like: ", result);
                     return true;
                 })
-                .catch(function(e) {
-                    console.log("like: ", e);
-                    Profile.dangerNotification(e)
+                .catch(function() {
+                    Profile.dangerNotification("Un erreur s'est produite");
                     return false;
                 })
         },
@@ -459,7 +443,8 @@
         }
     }
 
-    // TODO: init isFollowed des User + images de profil
+    // TODO: init isFollowed des User (non nécessaire)
+    // Done (sauf non nécessaire)
     let Modal = {
         name: "",
         email: "",
@@ -541,48 +526,8 @@
                 Modal.followed()
             }
         },
-        // TODO: Fix l'API follow pour pouvoir tester l'API followersList
         followers: function() {
-            let url = "_ah/api/tinyApi/v1/followersList/";
-            if (!(Modal.nextTokenFollows === "")) { url += '?next=' + Modal.nextTokenFollows }
-
-            let user = {
-                name:Modal.name,
-                email:Modal.email,
-                urlAvatar:Modal.url
-            }
-
-            return res = m.request({
-                method: "GET",
-                url: url,
-                params: {
-                    user:user
-                }
-            })
-                .then(function(result) {
-                    console.log("followersList: ", result);
-
-                    if (result.items.length === 0) {
-                        Profile.dangerNotification("Tout est déjà affiché")
-                    }
-                    else {
-                        // TODO: Image de profil du user correspondant
-                        let imageProfil = Profile.url;
-                        result.items.forEach(function(item) {
-                            let user = new User(item, item, imageProfil, Modal.name === Profile.name)
-                            Modal.follows.push(m(user))
-                        })
-                    }
-                    Modal.nextTokenFollows = result.nextPageToken
-                })
-                .catch(function(e) {
-                    console.log("followersList: ", e);
-                    Profile.dangerNotification(e);
-                })
-        },
-        // TODO: Fix l'API follow pour pouvoir tester l'API followedList
-        followed: function() {
-            let url = "_ah/api/tinyApi/v1/followedList/" + Modal.email;
+            let url = "_ah/api/tinyApi/v1/followersList/" + Modal.email;
             if (!(Modal.nextTokenFollows === "")) { url += '?next=' + Modal.nextTokenFollows }
 
             return m.request({
@@ -590,26 +535,48 @@
                 url: url
             })
                 .then(function(result) {
-                    console.log("followedList: ", result)
-                    console.log(result)
+                    console.log("followers: ", result)
 
-                    if (result.items === undefined || result.items.length === 0) {
-                        Profile.dangerNotification("Rien n'a été trouvé !")
+                    for(let i in result.items) {
+                        let item = result.items[i]
+                        let user = new User(item.name, item.email, item.urlAvatar, false);
+                        Modal.follows.push(m(user));
                     }
-                    else {
-                        // TODO: Image de profil du user correspondant
-                        let imageProfil = Profile.url;
-                        for(let i in result.items) {
-                            let user = new User(result.items[i].key.name, result.items[i].key.name, imageProfil, false);
-                            Modal.follows.push(m(user));
-                        }
+
+                    if ('nextPageToken' in result) { Modal.nextTokenFollows = result.nextPageToken }
+                })
+                .catch(function() {
+                    Profile.dangerNotification("Un erreur s'est produite");
+                })
+        },
+        followed: function() {
+            let url = "_ah/api/tinyApi/v1/followedList/" + Modal.email;
+            if (!(Modal.nextTokenFollows === "")) { url += '?next=' + Modal.nextTokenFollows }
+
+            // Need to check in the case there is less than 10 followed in total because in this case there no token
+            // sent in the request
+            // To do that we check if there isn't a token and if we already had updated Modal.follows (first page request)
+            if (Modal.nextTokenFollows === "" && Modal.follows.length > 0) { return undefined }
+
+            return m.request({
+                method: "GET",
+                url: url
+            })
+                .then(function(result) {
+                    console.log("followed: ", result)
+
+                    for(let i in result.items) {
+                        let item = result.items[i]
+                        let user = new User(item.name, item.email, item.urlAvatar, Modal.email === Profile.email);
+                        Modal.follows.push(m(user));
                     }
-                    Modal.nextTokenFollows = result.nextPageToken;
+
+                    if ('nextPageToken' in result) { Modal.nextTokenFollows = result.nextPageToken }
                 })
-                .catch(function(e) {
-                    console.log("followedList: ", e);
-                    Profile.dangerNotification(e);
+                .catch(function() {
+                    Profile.dangerNotification("Un erreur s'est produite");
                 })
+
         }
     }
 
@@ -622,9 +589,15 @@
         Profile.email=profile.getEmail();
         Profile.url=profile.getImageUrl();
 
-        Profile.updateUser();
+        console.log("Connexion à l'utilisateur:")
+        console.log("-ID: ", Profile.ID);
+        console.log("-nom: ", Profile.name);
+        console.log("-email: ", Profile.email);
+        console.log("-urlAvatar: ", Profile.url);
 
+        Profile.updateUser();
         Profile.successNotification("Connexion effectuée");
+
         m.route.set('/secret');
     }
 
@@ -742,8 +715,7 @@
                 }, "Afficher plus de messages")
             )
         },
-        // TODO: NotWorking alors que la même chose pour PostMessageButton fonctionne
-        // Pas spécialement important
+        // TODO: NotWorking alors que la même chose pour PostMessageButton fonctionne (non nécessaire)
         // START
         loading: function() {
             document.getElementById('TimeLineButton').classList.add('is-loading');
@@ -766,9 +738,8 @@
         },
         updateMessage: function(items) {
             for (let i in items) {
-                // TODO: Fix l'email et l'avatar utilisateur
-                // var message = new Message(items[i].key.name, items[i].name, items[i].email, items[i].url, items[i].url, items[i].body, items[i].like);
-                var message = new Message(items[i].key.name, items[i].sender, items[i].sender, Profile.url, items[i].url, items[i].body, items[i].like);
+                let item = items[i]
+                let message = new Message(item.key.name, item.sender.name, item.sender.email, item.sender.urlAvatar, item.url, item.body, item.like);
                 TimeLine.listItems.push(m(message));
             }
         }
