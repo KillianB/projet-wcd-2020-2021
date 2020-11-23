@@ -48,7 +48,7 @@ Création d'un message avec 10 followers : 179 ms \
 Création d'un message avec 100 followers : 197 ms \
 Création d'un message avec 500 followers : 470 ms
 
-![screen des benckmark des posts](/screens/screenFromMeasurePost.png "")
+![screen des benckmark des posts](screens/screenFromMeasurePost.png "")
 
 ### Afficher les posts
 
@@ -56,7 +56,7 @@ Le second benchmark est le suivant : combien de temps prends l'affichage des pos
 posts ? Le servlet qui nous a permis de réaliser les mesures est src/java/tests/getNewPostsMeasure.java. Pour des 
 raisons inconnues il renvoie rarement des résultats.
 
-![screen des resultats obtenus](/screens/screenFromMeasureGetTimeLine.png "screen des résultats obtenus")
+![screen des resultats obtenus](screens/screenFromMeasureGetTimeLine.png "screen des résultats obtenus")
 
 
 réception de 10 posts : 998 ms \
@@ -74,10 +74,15 @@ X likes par secondes :
 ## Les kinds utilisés
 
  - Post
+ ![Screen Kind Post](screens/screenKindPost.png "Screen Kind Post")
  - PostIndex
+ ![Screen Kind PostIndex](screens/screenKindPostIndex.png "Screen Kind PostIndex")
  - LikeCounter
+ ![Screen Kind LikeCounter](screens/screenKindLikeCounter.png "Screen Kind LikeCounter")
  - Follow
- - User  
+ ![Screen Kind Follow](screens/screenKindFollow.png "Screen Kind Follow")
+ - User
+ ![Screen Kind User](screens/screenKindUser.png "Screen Kind User")
 
 ### Post
 
