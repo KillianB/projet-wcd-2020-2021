@@ -122,7 +122,9 @@ Ce projet est complexe à réaliser car il a fallu réfléchir à des moyens de 
 d'API. Ceux-ci n'ont pas été facile à mettre en oeuvre surtout à cause des problèmes liés aux clés. Nous avons eu des 
 difficultés lors de l'élaboration des servlets de mesures d'efficacité des get et post. En effet, pour une raison
 inconnue, les valeurs que nous obtenons sont très élevées voire aberrantes. L'utilisation de mithril a posé problème
-surtout sur la gestion des requêtes, des comportements inattendus et compliqués à corriger.
+surtout sur la gestion des requêtes, des comportements inattendus et compliqués à corriger. Un autre problème que nous 
+avons rencontré c'est que nous n'arrivons pas a faire fonctionner le "try this Api" du portail google. Nous ne pouvons
+donc pas utiliser directement l'API.
 
 Sinon comme possibilités d'améliorer l'application, la possibilité d'associer un like à un utilisateur pour un post 
 donné permettrait de rajouter la possibilité de unlike un post et que chaque utilisateur puisse like au plus une fois.
