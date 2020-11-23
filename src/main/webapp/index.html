@@ -22,7 +22,6 @@
 <body>
 <script>
 
-    // TODO: isFollowed init
     class User {
         constructor(name, email, url, isFollowed) {
             this.name = name;
@@ -64,14 +63,19 @@
 
         button() {
             let e = document.getElementById(this.email + 'Button');
+            let user = {
+                name:this.name,
+                email:this.email,
+                urlAvatar:this.url
+            }
             if (this.isFollowed) {
-                if(Profile.unfollow(this.email)) {
+                if(Profile.unfollow(user)) {
                     e.innerText = "Follow";
                     e.classList.remove('is-light');
                 }
             }
             else {
-                if(Profile.follow(this.email)) {
+                if(Profile.follow(user)) {
                     e.innerText = "Unfollow";
                     e.classList.add('is-light');
                 }
@@ -210,7 +214,7 @@
                                 m('img', {
                                     src:Profile.url,
                                     class:'navbar-item image is-64x64',
-                                    style:'border-radius:50%; margin-top:auto; margin-bottom:auto'
+                                    style:'border-radius:50%; margin-top:auto; margin-bottom:auto; width:64px; height:64px'
                                 }),
 
                                 // Profil name
@@ -258,38 +262,70 @@
                 ])
             ])
         },
-        updateUser: function() {},
+        updateUser: function() {
+            let body = {
+                name:Profile.name,
+                email:Profile.email,
+                urlAvatar:Profile.url
+            }
+            return m.request({
+                method:"POST",
+                url:"_ah/api/tinyApi/v1/entity",
+                body:body
+            })
+                .then(function (result) {
+                    console.log("updateUser: Done")
+                })
+                .catch(function(e) {
+                    console.log("updateUser: ", e)
+                    Profile.dangerNotification("Une erreur s'est produite lors de l'update");
+
+                    Profile.ID = "";
+                    m.route.set("/login");
+                })
+        },
         postMessage: function(content, image) {
             // On montre à l'utilisateur que l'on envoi le message
             PostMessageButton.loading();
 
+            let sender = {
+                email:Profile.email
+            }
             let res = undefined;
             if (PostMessage.content === "" && PostMessage.image === "") {
                 Profile.dangerNotification("Au moins un champ doit contenir quelque chose !");
             }
             else {
                 // On fait la requête
-                let data = {
-                    url: image,
+                let body = {
+                    sender: sender,
                     body: content,
-                    sender: Profile.email
+                    url: image
                 }
                 res = m.request({
                     method: "POST",
                     url: "_ah/api/tinyApi/v1/postMessage",
-                    params: data
+                    body: body
                 })
                     .then(function(result) {
                         console.log("post_message: ", result);
+                        Profile.infoNotification("Message envoyé")
 
                         // On vide le contenu de la fenêtre pour confirmer à l'utilisateur que l'envoi a bien été effectué
                         PostMessage.content = "";
                         document.getElementById("PostContent").value = "";
                         PostMessage.image = "";
                         document.getElementById("PostImage").value = "";
+
+                        // On termine l'envoi du messages
+                        PostMessageButton.unloading();
                     })
-                    .catch(function() {
-                        Profile.dangerNotification("Une erreur s'est produite lors de l'envois");
+                    .catch(function(e) {
+                        console.log("post_message: ", e)
+                        Profile.dangerNotification(e);
+
+                        // On termine l'envoi du messages
+                        PostMessageButton.unloading();
                     })
             }
 
@@ -305,7 +341,12 @@
             let items = [];
 
             // On fait la requête
-            let url = "_ah/api/tinyApi/v1/collectionresponse_post/" + Profile.email;
+            let user = {
+                name:Profile.name,
+                email:Profile.email,
+                urlAvatar:Profile.url
+            }
+            let url = "_ah/api/tinyApi/v1/collectionresponse_post/" + user;
             if (!(Profile.nextMessageToken === "" || Profile.nextMessageToken === undefined)) {
                 url += '?cursorString=' + Profile.nextMessageToken;
             }
@@ -320,6 +361,11 @@
                     else { Profile.nextMessageToken="" }
                     items = result.items;
                     TimeLine.updateMessage(items);
+                    Profile.infoNotification("Timeline chargée")
+                })
+                .catch(function(e) {
+                    console.log("next: ", e)
+                    Profile.dangerNotification(e)
                 })
 
             if (items === []) {
@@ -332,48 +378,68 @@
             // On retourne le résultat de la requête
             return res;
         },
+        // TODO: Fix l'API follow
         follow: function(target) {
-            let data = {
-                user: Profile.email,
+            let body = {
+                user: {
+                    name:Profile.name,
+                    email:Profile.email,
+                    urlAvatar:Profile.url
+                },
                 target: target
             }
             return m.request({
                 method: "POST",
                 url: "_ah/api/tinyApi/v1/follow",
-                params: data
+                body: body
             })
                 .then(function(result) {
                     console.log("follow: ", result);
+                    Profile.infoNotification("Follow effectué")
+                })
+                .catch(function(e) {
+                    console.log("follow: " ,e)
+                    Profile.dangerNotification(e)
                 })
         },
+        // TODO: Fix l'API unfollow
         unfollow: function(target) {
-            let data = {
-                user: Profile.email,
+            let body = {
+                user: {
+                    name:Profile.name,
+                    email:Profile.email,
+                    urlAvatar:Profile.url
+                },
                 target: target
             }
             return m.request({
                 method: "POST",
                 url: "_ah/api/tinyApi/v1/unfollow",
-                params: data
+                body: body
             })
                 .then(function(result) {
                     console.log("unfollow: ", result);
+                    Profile.infoNotification("Unfollow effectué")
+                })
+                .catch(function(e) {
+                    console.log("unfollow: " ,e)
+                    Profile.dangerNotification(e)
                 })
         },
         like: function(message) {
-            let bool = true;
-            m.request({
+            return m.request({
                 method: "POST",
                 url: "_ah/api/tinyApi/v1/like/" + message.key
             })
                 .then(function(result) {
                     console.log("like: ", result);
+                    return true;
                 })
                 .catch(function(e) {
-                    console.log(e);
-                    bool = false
+                    console.log("like: ", e);
+                    Profile.dangerNotification(e)
+                    return false;
                 })
-            return bool;
         },
         infoNotification: function (message) {
             let notification = new Notification(message, 'is-info');
@@ -475,13 +541,23 @@
                 Modal.followed()
             }
         },
+        // TODO: Fix l'API follow pour pouvoir tester l'API followersList
         followers: function() {
-            let url = "_ah/api/tinyApi/v1/followersList/" + Modal.email;
+            let url = "_ah/api/tinyApi/v1/followersList/";
             if (!(Modal.nextTokenFollows === "")) { url += '?next=' + Modal.nextTokenFollows }
+
+            let user = {
+                name:Modal.name,
+                email:Modal.email,
+                urlAvatar:Modal.url
+            }
 
             return res = m.request({
                 method: "GET",
-                url: url
+                url: url,
+                params: {
+                    user:user
+                }
             })
                 .then(function(result) {
                     console.log("followers:" + result)
@@ -501,6 +577,7 @@
                     Modal.nextTokenFollows = result.nextPageToken
                 })
         },
+        // TODO: Fix l'API follow pour pouvoir tester l'API followedList
         followed: function() {
             let url = "_ah/api/tinyApi/v1/followedList/" + Modal.email;
             if (!(Modal.nextTokenFollows === "")) { url += '?next=' + Modal.nextTokenFollows }
