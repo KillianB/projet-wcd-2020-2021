@@ -31,8 +31,8 @@ public class GetNewPostsMeasure extends HttpServlet {
 
 		DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-		User bob = new User("Bob", "a", "a");
-		User alice = new User("Alice", "b", "b");
+		User bob = new User("Bob@gmail.com", "a", "a");
+		User alice = new User("Alice@gmail.com", "b", "b");
 
 		Entity bobE = new Entity("User", bob.getEmail());
 		bobE.setProperty("name", bob.getName());
