@@ -27,6 +27,12 @@ import java.util.concurrent.TimeUnit;
 public class MesureLike extends HttpServlet {
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("text/plain");
+        response.setCharacterEncoding("UTF-8");
+
+        response.getWriter().println("Tests for measuring how many likes we can assure in a sec");
+
+
         Key key = createMessages(new User());
         long totalLike = 0;
         List<Thread> thread = new ArrayList<>();
@@ -45,19 +51,21 @@ public class MesureLike extends HttpServlet {
         while (currentlyNbLike == totalLike+thread.size()) {
             for (int i = 0; i < thread.size(); i++) {
                 thread.set(i, new Thread(new Run(key)));
+                thread.get(i).start();
             }
-            totalLike = (long)(LikeCounter.countLike(key).getObject());
+
             try {
-                TimeUnit.MILLISECONDS.sleep(250);
+                TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            for (int j = 0; j < thread.size(); j++) {
+                thread.get(j).interrupt();
+            }
+            totalLike = (long)(LikeCounter.countLike(key).getObject());
         }
-
-                new Thread(new Run(key));
-
-
     }
+
     private Key createMessages(User user) {
          return (Post.postMessage(new Post(user, "",""))).getKey();
     }
